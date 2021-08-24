@@ -194,6 +194,13 @@ PUB AFCAuto(state): curr_state
     state := ((curr_state & core#AFCAUTOON_MASK) | state)
     writereg(core#RXCFG, 1, @state)
 
+PUB AFCOffset{}: offs
+' Read AFC frequency offset
+'   Returns: Frequency offset in Hz
+    offs := 0
+    readreg(core#AFCMSB, 2, @offs)
+    return (~~offs) * FSTEP
+
 PUB AGCMode(state): curr_state
 ' Enable AGC
 '   Valid values:
