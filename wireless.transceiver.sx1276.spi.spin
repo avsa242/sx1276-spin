@@ -22,7 +22,6 @@ CON
 ' Modulation modes
     FSK                     = 0
     OOK                     = 1
-    LORA                    = 4
 
 ' Device modes
     SLEEPMODE               = %000
@@ -95,6 +94,10 @@ CON
 ' Payload length mode
     PKTLEN_FIXED            = 0
     PKTLEN_VAR              = 1
+
+' Sync word read/write operation
+    SW_READ                 = 0
+    SW_WRITE                = 1
 
 VAR
 
@@ -703,25 +706,33 @@ PUB Sleep{}
 ' Power down chip
     opmode(SLEEPMODE)
 
-PUB SyncMode(mode): curr_mode
-' Set syncword mode
-'   TRUE (-1 or 1): enable sync word generation (TX) and detection (RX)
-'   FALSE (0): no syncword
-'   Any other value polls the chip and returns the current setting
-    curr_mode := 0
-    readreg(core#SYNCCFG, 1, @curr_mode)
-    case ||(mode)
-        0, 1:
-            mode := ||(mode) << core#SYNCON
+PUB SyncWord(rw, ptr_buff)
+' Set sync word to value at ptr_buff
+'   Valid values:
+'       rw: SW_READ (0), SW_WRITE (1)
+'       variable at address ptr_buff: All bytes can be $00..$FF
+'   For rw, any value other than SW_WRITE (1) polls the chip and returns the current setting
+'   NOTE: Variable pointed to by ptr_buff must be at least 8 bytes in length
+    case rw
+        SW_WRITE:
+            writereg(core#SYNCVALUE1, 8, ptr_buff)
         other:
-            return (((curr_mode >> core#SYNCON) & 1) == 1)
+            readreg(core#SYNCVALUE1, 8, ptr_buff)
 
-    mode := ((curr_mode & core#SYNCON_MASK) | mode)
-    writereg(core#SYNCCFG, 1, @mode)
-
-PUB SyncWord(val): curr_val
-' Set Syncword
+PUB SyncWordEnabled(state): curr_state
+' Enable sync word generation (TX) and detection (RX)
+'   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
+    curr_state := 0
+    readreg(core#SYNCCFG, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state) << core#SYNCON
+        other:
+            return (((curr_state >> core#SYNCON) & 1) == 1)
+
+    state := ((curr_state & core#SYNCON_MASK) | state)
+    writereg(core#SYNCCFG, 1, @state)
 
 PUB SyncWordLength(length): curr_len
 ' Set length of sync word, in bytes
