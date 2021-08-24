@@ -68,6 +68,12 @@ CON
     RFO                     = 0
     PABOOST                 = 1 << core#PASELECT
 
+' Gaussian modulation shaping filters
+    BT_NONE                 = 0
+    BT_1_0                  = 1
+    BT_0_5                  = 2
+    BT_0_3                  = 3
+
 ' Interrupt flags
     INT_MODEREADY           = 1 << 15           ' OpMode() ready
     INT_RXREADY             = 1 << 14           ' receive ready
@@ -255,6 +261,24 @@ PUB FSKRampTime(ramptime): curr_time
             readreg(core#PARAMP, 1, @curr_time)
             return lookupz(curr_time: 3400, 2000, 1000, 500, 250, 125, 100,{
 }           62, 50, 40, 31, 25, 20, 15, 12, 10) & core#PA_RAMP_BITS
+
+PUB GaussianFilter(mode): curr_mode
+' Set Gaussian filter/data shaping modeeters
+'   Valid values:
+'       BT_NONE (0): No shaping
+'       BT_1_0 (1): Gaussian filter, BT = 1.0
+'       BT_0_5 (2): Gaussian filter, BT = 0.5
+'       BT_0_3 (3): Gaussian filter, BT = 0.3
+'   Any other value polls the chip and returns the current setting
+    readreg(core#PARAMP, 1, @curr_mode)
+    case mode
+        BT_NONE..BT_0_3:
+            mode := mode << core#MODSHP
+        other:
+            return ((curr_mode >> core#MODSHP) & core#MODSHP_BITS)
+
+    mode := ((curr_mode & core#MODSHP_MASK) | mode)
+    writereg(core#PARAMP, 1, @mode)
 
 PUB GPIO0(mode): curr_mode
 ' Assert DIO0 pin on set mode

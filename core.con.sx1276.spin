@@ -55,8 +55,12 @@ CON
 
     PARAMP                      = $0A
     PARAMP_MASK                 = $0F
+        MODSHP                  = 5
         PA_RAMP                 = 0
+        MODSHP_BITS             = %11
         PA_RAMP_BITS            = %1111
+        MODSHP_MASK             = (MODSHP_BITS << MODSHP) ^ PARAMP_MASK
+        PA_RAMP_MASK            = PA_RAMP_BITS ^ PARAMP_MASK
 
     OCP                         = $0B
     OCP_MASK                    = $3F
