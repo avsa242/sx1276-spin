@@ -104,6 +104,11 @@ CON
     DCFREE_MANCH            = %01
     DCFREE_WHITE            = %10
 
+' Address matching
+    ADDRCHK_NONE            = %00
+    ADDRCHK_CHK_NO_BCAST    = %01
+    ADDRCHK_CHK_BCAST       = %10
+
 VAR
 
     long _CS, _RESET
@@ -155,6 +160,24 @@ PUB PresetFSK_RX4k8{}
     reset{}
 
     modulation(FSK)
+
+PUB AddressCheck(mode): curr_mode
+' Enable address checking/matching/filtering
+'   Valid values:
+'       ADDRCHK_NONE (%00): No address check
+'       ADDRCHK_CHK_NO_BCAST (%01): Check address, but ignore broadcast addresses
+'       ADDRCHK_CHK_00_BCAST (%10): Check address, and also respond to broadcast address
+'   Any other value polls the chip and returns the current setting
+    curr_mode := 0
+    readreg(core#PKTCFG1, 1, @curr_mode)
+    case mode
+        ADDRCHK_NONE, ADDRCHK_CHK_NO_BCAST, ADDRCHK_CHK_BCAST:
+            mode <<= core#ADDRFILT
+        other:
+            return ((curr_mode >> core#ADDRFILT) & core#ADDRFILT_BITS)
+
+    mode := ((curr_mode & core#ADDRFILT_MASK) | mode)
+    writereg(core#PKTCFG1, 1, @mode)
 
 PUB AGCMode(state): curr_state
 ' Enable AGC
