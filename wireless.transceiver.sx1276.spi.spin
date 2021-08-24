@@ -521,6 +521,25 @@ PUB LowFreqMode(state): curr_state
     state := ((curr_state & core#LOWFREQMODEON_MASK) | state)
     writereg(core#OPMODE, 1, @state)
 
+PUB ManchesterEnc(state): curr_state
+' Enable Manchester encoding/decoding
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+'   NOTE: This setting and DataWhitening() are mutually exclusive;
+'       enabling this will disable DataWhitening()
+    curr_state := 0
+    readreg(core#PKTCFG1, 1, @curr_state)
+    case ||(state)
+        0:                                      ' disabled state is just 0, so
+        1:                                      '   just leave it as-is
+            state := DCFREE_MANCH << core#DCFREE
+        other:
+            curr_state := ((curr_state >> core#DCFREE) & core#DCFREE_BITS)
+            return (curr_state == DCFREE_MANCH)
+
+    state := ((curr_state & core#DCFREE_MASK) | state)
+    writereg(core#PKTCFG1, 1, @state)
+
 PUB Modulation(mode): curr_mode | lr_mode, opmode_orig
 ' Set modulation type
 '   Valid values:
