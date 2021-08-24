@@ -614,21 +614,19 @@ PUB RSSIThresh(thresh): curr_thr
             return -(curr_thr / 2)
 
 PUB RXBandwidth(bw): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
-' Set receive bandwidth, in Hz
+' Set receive bandwidth, in Hz (* single side-band)
 '   Valid values:
-'       2600, 3100, 3900, 5200, 6300, 7800, 10400, 12500, 15600,
-'       20800, 25000, 31300, 41700, 50000, 62500, 83300, 100000, 125000,
-'       166700, 200000, 250000, 333300, 400000, 500000
+'       2604, 3125, 3906, 5208, 6250, 7812, 10416, 12500, 15625,
+'       20833, 25000, 31250, 41666, 50000, 62500, 83333, 100000, 125000,
+'       166666, 200000, 250000, 333333, 400000, 500000
 '   Any other value polls the chip and returns the current setting
-'   NOTE: This setting also directly affects occupied RF bandwidth
-'       when transmitting
 '   NOTE: In the 169MHz band, 250_000 and 500_000 are not supported
     curr_bw := 0
     readreg(core#RXBW, 1, @curr_bw)
     ' exponent differs depending on FSK or OOK modulation
     exp_mod := lookupz(modulation(-2): 2, 3)
     case bw
-        2_600..500_000:
+        2_604..500_000:
             ' iterate through combinations of exponent and mantissa settings
             '   until a (close) match to the requested BW is found
             repeat exp from 7 to 0
