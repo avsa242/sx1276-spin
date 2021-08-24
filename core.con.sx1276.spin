@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Oct 6, 2019
-    Updated Aug 22, 2021
+    Updated Aug 24, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -24,7 +24,7 @@ CON
 
     SPI_WR                      = 1 << 7        ' wnr bit (Write access)
 
-' General/shared functionality
+' Registers
     FIFO                        = $00
 
     OPMODE                      = $01
@@ -34,20 +34,11 @@ CON
         LOWFREQMODEON           = 3
         MODE                    = 0
         MODTYPE_BITS            = %11
-        MODTYPE_LORA_BITS       = %111          ' MODTYPE and LORAMODE combined
         MODE_BITS               = %111
         LORAMODE_MASK           = (1 << LORAMODE) ^ OPMODEF_MASK
         MODTYPE_MASK            = (MODTYPE_BITS << MODTYPE) ^ OPMODEF_MASK
-        MODTYPE_LORA_MASK       = (MODTYPE_LORA_BITS << MODTYPE) ^ OPMODEF_MASK
         LOWFREQMODEON_MASK      = (1 << LOWFREQMODEON) ^ OPMODEF_MASK
         MODE_MASK               = MODE_BITS ^ OPMODEF_MASK
-        LORA                    = 1 << LORAMODE
-
-    OPMODEL_MASK                = $CF           ' chip in LoRa mode
-        ACCSHRDREG              = 6
-        LORAMODEL_MASK          = (1 << LORAMODE) ^ OPMODEL_MASK
-        LOWFREQMODEONL_MASK     = (1 << LOWFREQMODEON) ^ OPMODEL_MASK
-        MODEL_MASK              = MODE_BITS ^ OPMODEL_MASK
 
     FRFMSB                      = $06
     FRFMID                      = $07
@@ -220,106 +211,8 @@ CON
     PLLHOP                      = $44
     BITRATEFRAC                 = $5D
 
-' LoRa-specific functionality
-    FIFOADDRPTR                 = $0D   'LORA
-    FIFOTXBASEADDR              = $0E   'LORA
-    FIFORXBASEADDR              = $0F   'LORA
-    FIFORXCURRENTADDR           = $10   'LORA
-    IRQFLAGS_MASK               = $11   'LORA
-    IRQFLAGS                    = $12   'LORA
-    RXNBBYTES                   = $13   'LORA
-    RXHDRCNTVALUEMSB            = $14   'LORA
-    RXHDRCNTVALUELSB            = $15   'LORA
-    RXPACKETCNTVALUEMSB         = $16   'LORA
-    RXPACKETCNTVALUELSB         = $17   'LORA
-
-    MDMSTAT                     = $18   'LORA
-        RXCODERATE              = 5
-        MDM_CLR                 = 4
-        HDR_VALID               = 3
-        RX_ONGOING              = 2
-        SIG_SYNCD               = 1
-        SIG_DETECT              = 0
-        RXCODERATE_BITS         = %111
-        MDMSTATUS_BITS          = %11111
-
-    PKTSNRVALUE                 = $19   'LORA
-    PKTRSSIVALUE                = $1A   'LORA
-    LORA_RSSIVALUE              = $1B   'LORA
-
-    HOPCHANNEL                  = $1C   'LORA
-        PLLTIMEOUT              = 7
-        CRCONPAYLD              = 6
-        FHSSPRES_CHAN           = 0
-        FHSSPRES_CHAN_BITS      = %111111
-
-    MDMCFG1                     = $1D   'LORA
-    MDMCFG1_MASK                = $FF
-        BW                      = 4
-        CODERATE                = 1
-        IMPL_HDRMODEON          = 0
-        BW_BITS                 = %1111
-        CODERATE_BITS           = %111
-        BW_MASK                 = (BW_BITS << BW) ^ MDMCFG1_MASK
-        CODERATE_MASK           = (CODERATE_BITS << CODERATE) ^ MDMCFG1_MASK
-        IMPL_HDRMODEON_MASK     = 1 ^ MDMCFG1_MASK
-
-    MDMCFG2                     = $1E   'LORA
-    MDMCFG2_MASK                = $FF
-        SPREADFACT              = 4
-        TXCONTMODE              = 3
-        RXPAYLDCRCON            = 2
-        SYMBTIMEOUT_MSB         = 0
-        SPREADFACT_BITS         = %1111
-        SYMBTIMEOUT_MSB_BITS    = %11
-        SPREADFACT_MASK         = (SPREADFACT_BITS << SPREADFACT) ^ MDMCFG2_MASK
-        TXCONTMODE_MASK         = (1 << TXCONTMODE) ^ MDMCFG2_MASK
-        RXPAYLDCRCON_MASK       = (1 << RXPAYLDCRCON) ^ MDMCFG2_MASK
-        SYMBTIMEOUTMSB_MASK     = SYMBTIMEOUT_MSB_BITS ^ MDMCFG2_MASK
-
-    SYMBTIMEOUTLSB              = $1F   'LORA
-        SYMBTIMEOUT_LSB         = 0
-        SYMBTIMEOUT_BITS        = %1111111111
-
-    LORA_PREAMBLEMSB            = $20   'LORA
-    LORA_PREAMBLELSB            = $21   'LORA
-    LORA_PAYLDLENGTH            = $22   'LORA
-    MAXPAYLDLENGTH              = $23   'LORA
-    HOPPERIOD                   = $24   'LORA
-    FIFORXBYTEADDR              = $25   'LORA
-
-    MDMCFG3                     = $26   'LORA
-    MDMCFG3_MASK                = $0C
-        LOWDRATEOPT             = 3
-        AGCAUTOON               = 2
-        LOWDRATEOPT_MASK        = (1 << LOWDRATEOPT) ^ MDMCFG3_MASK
-        AGCAUTOON_MASK          = 1 ^ MDMCFG3_MASK
-
-    PPMCORRECTION               = $27   'LORA
-    LORA_FEIMSB                 = $28   'LORA
-    LORA_FEIMID                 = $29   'LORA
-    LORA_FEILSB                 = $2A   'LORA
-' $2B - RESERVED
-    RSSIWIDEBAND                = $2C   'LORA
-' $2D..2E - RESERVED
-    IFFREQ1                     = $2F   'LORA
-    IFFREQ2                     = $30   'LORA
-    DETECTOPT                   = $31   'LORA
-' $32 - RESERVED
-    INVERTIQ                    = $33   'LORA
-' $34..$35 - RESERVED
-    HIGHBWOPT1                  = $36   'LORA
-    DETECTIONTHRESHOLD          = $37   'LORA
-' $38 - RESERVED
-    SYNCWORD                    = $39   'LORA
-    HIGHBWOPT2                  = $3A   'LORA
-    INVERTIQ2                   = $3B
-' $3C..$3F - RESERVED
-
-#ifndef __propeller2__
-PUB Null
-'' This is not a top-level object
-#endif
+PUB Null{}
+' This is not a top-level object
 
 {
     --------------------------------------------------------------------------------------------------------
