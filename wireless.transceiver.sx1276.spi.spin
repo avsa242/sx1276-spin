@@ -69,19 +69,26 @@ CON
     PABOOST                 = 1 << core#PASELECT
 
 ' Interrupt flags
-    RX_TIMEOUT              = 1 << 7            ' receive timeout
-    RX_DONE                 = 1 << 6            ' receive done
-    PYLD_CRCERR             = 1 << 5            ' payload CRC error
-    VALID_HDR               = 1 << 4            ' valid header
-    TX_DONE                 = 1 << 3            ' transmit done
-    CAD_DONE                = 1 << 2            ' channel activity detect done
-    FHSS_CHG                = 1 << 1            ' FHSS change channel
-    CAD_DETECT              = 1                 ' channel activity detected
-    INT_ALL                 = $FF
+    INT_MODEREADY           = 1 << 15           ' OpMode() ready
+    INT_RXREADY             = 1 << 14           ' receive ready
+    INT_TXREADY             = 1 << 13           ' transmit ready
+    INT_PLLLOCK             = 1 << 12           ' PLL is locked
+    INT_RSSITHRESH          = 1 << 11           ' RSSI() above RSSIThreshold()
+    INT_TIMEOUT             = 1 << 10           ' timeout occurred
+    INT_PREAMBLEOK          = 1 << 9            ' preamble OK
+    INT_SYNCWORDOK          = 1 << 8            ' syncword OK
+    INT_FIFOFULL            = 1 << 7            ' FIFO is full
+    INT_FIFOEMPTY           = 1 << 6            ' FIFO is empty
+    INT_FIFOTHRESH          = 1 << 5            ' FIFO is above set threshold
+    INT_FIFOOVERRN          = 1 << 4            ' FIFO has overrun
+    INT_PACKETSENT          = 1 << 3            ' packet sent (TX)
+    INT_PAYLDREADY          = 1 << 2            ' payload ready (RX)
+    INT_CRCOK               = 1 << 1            ' CRC of payload is OK
+    INT_BATTVOLTLO          = 1                 ' battery voltage low
 
 ' Payload length mode
-    PKTLEN_VAR              = 0
-    PKTLEN_FIXED            = 1
+    PKTLEN_FIXED            = 0
+    PKTLEN_VAR              = 1
 
 VAR
 
@@ -366,7 +373,11 @@ PUB IntClear(mask)
 '       4: FIFO has overrun
 '       0: Battery voltage < low batt threshold
 '   Any other value is ignored
-    if (mask & %0000101100010001)
+    if (mask & core#WR_CLR_BITS)
+            ' interrupt bits set (1) in the mask were chosen to be cleared
+            ' to actually clear them, invert all of the bits
+            ' so the 1's become 0's (other bits are ignored)
+            mask ^= core#IRQFLAGS_MASK
             writereg(core#IRQFLAGS1, 2, @mask)
     else
         return
@@ -396,25 +407,19 @@ PUB Interrupt{}: mask
 
 PUB IntMask(mask): curr_mask    'XXX
 ' Set interrupt mask
+' Clear interrupt flags
 '   Valid values:
-'       Bits: 76543210
-'       Bit 7: Receive timeout
-'           6: Receive done
-'           5: Payload CRC error
-'           4: Valid header
-'           3: Transmit done
-'           2: CAD done
-'           1: FHSS change channel
-'           0: CAD detected
-'   Any other value polls the chip and returns the current setting
-    case mask
-        %0000_0000..%1111_1111:
-            mask ^= $FF                         ' invert bits so 1 sets,
-            writereg(core#IRQFLAGS_MASK, 1, @mask)' and 0 clears
-        other:
-            curr_mask := 0
-            readreg(core#IRQFLAGS_MASK, 1, @curr_mask)
-            return curr_mask ^ $FF
+'   Bits 15..0
+'       11: RSSI exceeds RSSIThreshold()
+'       9: Valid preamble detected
+'       8: Matching syncword (and address, if enabled) detected
+'       4: FIFO has overrun
+'       0: Battery voltage < low batt threshold
+'   Any other value is ignored
+    if (mask & core#WR_CLR_BITS)
+            writereg(core#IRQFLAGS1, 2, @mask)
+    else
+        return
 
 PUB LNAGain(gain): curr_gain
 ' Set LNA gain, in dB
@@ -462,7 +467,7 @@ PUB Modulation(mode): curr_mode | lr_mode, opmode_orig
         FSK, OOK:
             mode <<= core#MODTYPE
         other:
-            return (curr_mode >> core#MODTYPE) & core#MODTYPE_LORA_BITS
+            return (curr_mode >> core#MODTYPE) & core#MODTYPE_BITS
 
     ' set operating mode to SLEEP (required to change the LORAMODE bit)
     mode := (curr_mode & core#MODE_MASK & core#MODTYPE_MASK) | mode
@@ -535,21 +540,19 @@ PUB OverCurrentTrim(current): curr_val
 PUB PayloadLenCfg(mode): curr_mode
 ' Set payload length configuration/mode
 '   Valid values:
-'       PKTLEN_VAR (0): Variable-length payload
-'       PKTLEN_FIXED (1): Fixed-length payload
+'       PKTLEN_FIXED (0): Fixed-length payload
+'      *PKTLEN_VAR (1): Variable-length payload
 '   Any other value polls the chip and returns the current setting
-'   NOTE: When using PKTLEN_FIXED, PayloadLength(), CodeRate(), and
-'       CRCCheckEnabled() must be configured identically on both
-'       TX and RX sides of the radio link.
     curr_mode := 0
-    readreg(core#MDMCFG1, 1, @curr_mode)
+    readreg(core#PACKETCFG1, 1, @curr_mode)
     case mode
         0, 1:
+            mode <<= core#PACKETFORMAT
         other:
-            return (curr_mode & 1)
+            return ((curr_mode >> core#PACKETFORMAT) & 1)
 
-    mode := ((curr_mode & core#IMPL_HDRMODEON_MASK) | mode) & core#MDMCFG1_MASK
-    writereg(core#MDMCFG1, 1, @mode)
+    mode := ((curr_mode & core#PACKETFORMAT_MASK) | mode)
+    writereg(core#PACKETCFG1, 1, @mode)
 
 PUB PayloadLength(len): curr_len
 ' Set payload length, in bytes
@@ -568,10 +571,6 @@ PUB PLLLocked{}: flag
 '   Returns:
 '       0: PLL didn't lock
 '       1: PLL locked
-    readreg(core#HOPCHANNEL, 1, @flag)
-    return ((flag >> core#PLLTIMEOUT) & 1) ^ 1  ' wording/logic of this field
-                                                ' is reversed in the datasheet,
-                                                ' so invert the bit here
 
 PUB PreambleLength(length):  curr_len
 ' Set preamble length, in bits
@@ -659,25 +658,6 @@ PUB RXPayload(nr_bytes, ptr_buff)
             readreg(core#FIFO, nr_bytes, ptr_buff)
         other:
             return
-
-PUB RXTimeout(symbols): curr_symb | symbtimeout_msb, symbtimeout_lsb
-' Set receive timeout, in symbols
-'   Valid values: 0..1023
-'   Any other value polls the chip and returns the current setting
-    curr_symb := 0
-    readreg(core#MDMCFG2, 2, @curr_symb) ' The top 2 bits of SYMBTIMEOUT are in this reg
-    case symbols                        '   the bottom 8 bits are in the next reg
-        0..1023:
-            symbtimeout_msb := symbols >> 8
-            symbtimeout_lsb := symbols & $FF
-        other:
-            return curr_symb & core#SYMBTIMEOUT_BITS
-
-    curr_symb >>= 8
-    curr_symb &= core#SYMBTIMEOUTMSB_MASK
-    curr_symb := (curr_symb | symbtimeout_msb) & core#MDMCFG2_MASK
-    writereg(core#MDMCFG2, 1, @curr_symb)
-    writereg(core#SYMBTIMEOUTLSB, 1, @symbtimeout_lsb)
 
 PUB Sleep{}
 ' Power down chip

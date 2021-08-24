@@ -175,6 +175,21 @@ CON
     SYNCVALUE8                  = $2F
 
     PACKETCFG1                  = $30
+    PACKETCFG1_MASK             = $FF
+        PACKETFORMAT            = 7
+        DCFREE                  = 5
+        CRCON                   = 4
+        CRCAUTOCLROFF           = 3
+        ADDRFILT                = 1
+        CRCWHTNTYPE             = 0
+        DCFREE_BITS             = %11
+        ADDRFILT_BITS           = %11
+        PACKETFORMAT_MASK       = (1 << PACKETFORMAT) ^ PACKETCFG1_MASK
+        DCFREE_MASK             = (DCFREE_BITS << DCFREE) ^ PACKETCFG1_MASK
+        CRCON_MASK              = (1 << CRCON) ^ PACKETCFG1_MASK
+        CRCAUTOCLROFF_MASK      = (1 << CRCAUTOCLROFF) ^ PACKETCFG1_MASK
+        ADDRFILT_MASK           = (ADDRFILT_BITS << ADDRFILT) ^ PACKETCFG1_MASK
+        CRCWHTNTYPE_MASK        = 1 ^ PACKETCFG1_MASK
 
     PACKETCFG2                  = $31
     PACKETCFG2_MASK             = $7F
@@ -204,8 +219,12 @@ CON
     IMAGECAL                    = $3B
     TEMP                        = $3C
     LOWBAT                      = $3D
+
     IRQFLAGS1                   = $3E
     IRQFLAGS2                   = $3F
+    IRQFLAGS_MASK               = $FFFF
+        WR_CLR_BITS             = %0000_1011_0001_0001
+
     PLLHOP                      = $44
     BITRATEFRAC                 = $5D
 
