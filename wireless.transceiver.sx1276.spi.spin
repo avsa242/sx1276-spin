@@ -250,22 +250,25 @@ PUB FSKRampTime(ramptime): curr_time
 ' Set Rise/fall time of FSK ramp up/down, in microseconds
 '   Valid values: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, *40, 31, 25, 20, 15, 12, 10
 '   Any other value polls the chip and returns the current setting
+    curr_time := 0
+    readreg(core#PARAMP, 1, @curr_time)
     case ramptime
         3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12,{
 }       10:
             ramptime := lookdownz(ramptime: 3400, 2000, 1000, 500, 250, 125,{
 }           100, 62, 50, 40, 31, 25, 20, 15, 12, 10)
-            writereg(core#PARAMP, 1, @ramptime)
         other:
-            curr_time := 0
-            readreg(core#PARAMP, 1, @curr_time)
+            curr_time &= core#PA_RAMP_BITS
             return lookupz(curr_time: 3400, 2000, 1000, 500, 250, 125, 100,{
-}           62, 50, 40, 31, 25, 20, 15, 12, 10) & core#PA_RAMP_BITS
+}           62, 50, 40, 31, 25, 20, 15, 12, 10)
+
+    ramptime := ((curr_time & core#PA_RAMP_MASK) | ramptime)
+    writereg(core#PARAMP, 1, @ramptime)
 
 PUB GaussianFilter(mode): curr_mode
 ' Set Gaussian filter/data shaping modeeters
 '   Valid values:
-'       BT_NONE (0): No shaping
+'      *BT_NONE (0): No shaping
 '       BT_1_0 (1): Gaussian filter, BT = 1.0
 '       BT_0_5 (2): Gaussian filter, BT = 0.5
 '       BT_0_3 (3): Gaussian filter, BT = 0.3
