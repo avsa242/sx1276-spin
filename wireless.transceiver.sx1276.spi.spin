@@ -450,17 +450,19 @@ PUB IntMask(mask): curr_mask    'XXX
 
 PUB LNAGain(gain): curr_gain
 ' Set LNA gain, in dB
-'   Valid values: *0 (Maximum gain), -6, -12, -24, -26, -48
+'   Valid values: *0 (Maximum gain), -6, -12, -24, -36, -48
 '   Any other value polls the chip and returns the current setting
 '   NOTE: This setting will have no effect if AGC is enabled
+'   NOTE: The current setting returned may be different than what was
+'       explicitly set, if the AGC is enabled
     curr_gain := 0
     readreg(core#LNA, 1, @curr_gain)
     case gain
-        0, -6, -12, -24, -26, -48:
-            gain := lookdown(gain: 0, -6, -12, -24, -26, -48) << core#LNAGAIN
+        0, -6, -12, -24, -36, -48:
+            gain := lookdown(gain: 0, -6, -12, -24, -36, -48) << core#LNAGAIN
         other:
             curr_gain := (curr_gain >> core#LNAGAIN) & core#LNAGAIN_BITS
-            return lookup(curr_gain: 0, -6, -12, -24, -26, -48)
+            return lookup(curr_gain: 0, -6, -12, -24, -36, -48)
 
     gain := ((curr_gain & core#LNAGAIN_MASK) | gain) & core#LNA_MASK
     writereg(core#LNA, 1, @curr_gain)
