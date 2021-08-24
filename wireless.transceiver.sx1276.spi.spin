@@ -211,9 +211,19 @@ PUB ClkOut(divisor): curr_div
     writereg(core#OSC, 1, @divisor)
 
 PUB CRCCheckEnabled(state): curr_state
-' Enable CRC generation and check on payload
+' Enable CRC calculation (TX) and checking (RX)
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
+    curr_state := 0
+    readreg(core#PKTCFG1, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state) << core#CRCON
+        other:
+            return (((curr_state >> core#CRCON) & 1) == 1)
+
+    state := ((curr_state & core#CRCON_MASK) | state)
+    writereg(core#PKTCFG1, 1, @state)
 
 PUB DataRate(rate): curr_rate
 ' Set on-air data rate, in bits per second
