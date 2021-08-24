@@ -99,6 +99,11 @@ CON
     SW_READ                 = 0
     SW_WRITE                = 1
 
+' DC-free encoding/decoding
+    DCFREE_NONE             = %00
+    DCFREE_MANCH            = %01
+    DCFREE_WHITE            = %10
+
 VAR
 
     long _CS, _RESET
@@ -225,6 +230,25 @@ PUB DataRate(rate): curr_rate
             curr_rate := 0
             readreg(core#BITRATEMSB, 2, @curr_rate)
             return (FXOSC / curr_rate)
+
+PUB DataWhitening(state): curr_state
+' Enable data whitening
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+'   NOTE: This setting and ManchesterEnc() are mutually exclusive;
+'       enabling this will disable ManchesterEnc()
+    curr_state := 0
+    readreg(core#PKTCFG1, 1, @curr_state)
+    case ||(state)
+        0:
+        1:
+            state := DCFREE_WHITE << core#DCFREE
+        other:
+            curr_state := ((curr_state >> core#DCFREE) & core#DCFREE_BITS)
+            return (curr_state == DCFREE_WHITE)
+
+    state := ((curr_state & core#DCFREE_MASK) | state)
+    writereg(core#PKTCFG1, 1, @state)
 
 PUB DeviceID{}: id
 ' Version code of the chip
@@ -587,25 +611,25 @@ PUB PayloadLenCfg(mode): curr_mode
 '      *PKTLEN_VAR (1): Variable-length payload
 '   Any other value polls the chip and returns the current setting
     curr_mode := 0
-    readreg(core#PACKETCFG1, 1, @curr_mode)
+    readreg(core#PKTCFG1, 1, @curr_mode)
     case mode
         0, 1:
-            mode <<= core#PACKETFORMAT
+            mode <<= core#PKTFORMAT
         other:
-            return ((curr_mode >> core#PACKETFORMAT) & 1)
+            return ((curr_mode >> core#PKTFORMAT) & 1)
 
-    mode := ((curr_mode & core#PACKETFORMAT_MASK) | mode)
-    writereg(core#PACKETCFG1, 1, @mode)
+    mode := ((curr_mode & core#PKTFORMAT_MASK) | mode)
+    writereg(core#PKTCFG1, 1, @mode)
 
 PUB PayloadLength(len): curr_len
 ' Set payload length, in bytes
 '   Valid values: 1..255 (LoRa), 1..2047 (FSK/OOK)
 '   Any other value polls the chip and returns the current setting
             curr_len := 0
-            readreg(core#PACKETCFG2, 2, @curr_len)
+            readreg(core#PKTCFG2, 2, @curr_len)
             if lookdown(len: 1..2047)
                 len := ((curr_len & core#PAYLDLEN_MASK) | len)
-                writereg(core#PACKETCFG2, 2, @len)
+                writereg(core#PKTCFG2, 2, @len)
             else
                 return (curr_len & core#PAYLDLEN_BITS)
 

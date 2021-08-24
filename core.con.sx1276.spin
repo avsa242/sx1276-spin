@@ -206,9 +206,9 @@ CON
     SYNCVALUE7                  = $2E
     SYNCVALUE8                  = $2F
 
-    PACKETCFG1                  = $30
-    PACKETCFG1_MASK             = $FF
-        PACKETFORMAT            = 7
+    PKTCFG1                     = $30
+    PKTCFG1_MASK                = $FF
+        PKTFORMAT               = 7
         DCFREE                  = 5
         CRCON                   = 4
         CRCAUTOCLROFF           = 3
@@ -216,24 +216,24 @@ CON
         CRCWHTNTYPE             = 0
         DCFREE_BITS             = %11
         ADDRFILT_BITS           = %11
-        PACKETFORMAT_MASK       = (1 << PACKETFORMAT) ^ PACKETCFG1_MASK
-        DCFREE_MASK             = (DCFREE_BITS << DCFREE) ^ PACKETCFG1_MASK
-        CRCON_MASK              = (1 << CRCON) ^ PACKETCFG1_MASK
-        CRCAUTOCLROFF_MASK      = (1 << CRCAUTOCLROFF) ^ PACKETCFG1_MASK
-        ADDRFILT_MASK           = (ADDRFILT_BITS << ADDRFILT) ^ PACKETCFG1_MASK
-        CRCWHTNTYPE_MASK        = 1 ^ PACKETCFG1_MASK
+        PKTFORMAT_MASK          = (1 << PKTFORMAT) ^ PKTCFG1_MASK
+        DCFREE_MASK             = (DCFREE_BITS << DCFREE) ^ PKTCFG1_MASK
+        CRCON_MASK              = (1 << CRCON) ^ PKTCFG1_MASK
+        CRCAUTOCLROFF_MASK      = (1 << CRCAUTOCLROFF) ^ PKTCFG1_MASK
+        ADDRFILT_MASK           = (ADDRFILT_BITS << ADDRFILT) ^ PKTCFG1_MASK
+        CRCWHTNTYPE_MASK        = 1 ^ PKTCFG1_MASK
 
-    PACKETCFG2                  = $31
-    PACKETCFG2_MASK             = $7F
+    PKTCFG2                     = $31
+    PKTCFG2_MASK                = $7F
         DATAMODE                = 6
         IOHOMEON                = 5
         IOHOMEPWRFRM            = 4
         BEACONON                = 3
         PAYLDLEN_MSB            = 0
-        DATAMODE_MASK           = (1 << DATAMODE) ^ PACKETCFG2_MASK
-        IOHOMEON_MASK           = (1 << IOHOMEON) ^ PACKETCFG2_MASK
-        IOHOMEPWRFRM_MASK       = (1 << IOHOMEPWRFRM) ^ PACKETCFG2_MASK
-        BEACONON_MASK           = (1 << BEACONON) ^ PACKETCFG2_MASK
+        DATAMODE_MASK           = (1 << DATAMODE) ^ PKTCFG2_MASK
+        IOHOMEON_MASK           = (1 << IOHOMEON) ^ PKTCFG2_MASK
+        IOHOMEPWRFRM_MASK       = (1 << IOHOMEPWRFRM) ^ PKTCFG2_MASK
+        BEACONON_MASK           = (1 << BEACONON) ^ PKTCFG2_MASK
 
     PAYLDLENGTH                 = $32
     PKTCFG2_PAYLDLEN_MASK       = $7FFF         ' pseudo-mask: $31 and $32
