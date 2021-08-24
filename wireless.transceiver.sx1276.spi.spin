@@ -723,6 +723,21 @@ PUB SyncWord(val): curr_val
 ' Set Syncword
 '   Any other value polls the chip and returns the current setting
 
+PUB SyncWordLength(length): curr_len
+' Set length of sync word, in bytes
+'   Valid values: 1..8
+'   Any other value polls the chip and returns the current setting
+    curr_len := 0
+    readreg(core#SYNCCFG, 1, @curr_len)
+    case length
+        1..8:
+            length := (length-1) << core#SYNCSZ
+        other:
+            return (((curr_len >> core#SYNCSZ) & core#SYNCSZ_BITS) + 1)
+
+    length := ((curr_len & core#SYNCSZ_MASK) | length)
+    writereg(core#SYNCCFG, 1, @length)
+
 PUB TXMode{}
 ' Change chip state to transmit
     opmode(TX)
