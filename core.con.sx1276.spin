@@ -184,7 +184,19 @@ CON
 
     PREAMBLEMSB                 = $25
     PREAMBLELSB                 = $26
+
     SYNCCFG                     = $27
+    SYNCCFG_MASK                = $F7
+        AUTORSTRXMD             = 7
+        PREAM_POL               = 6
+        SYNCON                  = 5
+        SYNCSZ                  = 0
+        SYNCSZ_BITS             = %111
+        AUTORSTRXMD_MASK        = (1 << AUTORSTRXMD) ^ SYNCCFG_MASK
+        PREAM_POL_MASK          = (1 << PREAM_POL) ^ SYNCCFG_MASK
+        SYNCON_MASK             = (1 << SYNCON) ^ SYNCCFG_MASK
+        SYNCSZ_MASK             = SYNCSZ_BITS ^ SYNCCFG_MASK
+
     SYNCVALUE1                  = $28
     SYNCVALUE2                  = $29
     SYNCVALUE3                  = $2A

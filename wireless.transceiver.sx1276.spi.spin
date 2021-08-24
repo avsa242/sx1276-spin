@@ -614,7 +614,7 @@ PUB PLLLocked{}: flag
 
 PUB PreambleLength(length):  curr_len
 ' Set preamble length, in bits
-'   Valid values: 0..65535
+'   Valid values: 0..65535 (default: 3)
 '   Any other value polls the chip and returns the current setting
     case length
         0..65535:
@@ -703,8 +703,24 @@ PUB Sleep{}
 ' Power down chip
     opmode(SLEEPMODE)
 
+PUB SyncMode(mode): curr_mode
+' Set syncword mode
+'   TRUE (-1 or 1): enable sync word generation (TX) and detection (RX)
+'   FALSE (0): no syncword
+'   Any other value polls the chip and returns the current setting
+    curr_mode := 0
+    readreg(core#SYNCCFG, 1, @curr_mode)
+    case ||(mode)
+        0, 1:
+            mode := ||(mode) << core#SYNCON
+        other:
+            return (((curr_mode >> core#SYNCON) & 1) == 1)
+
+    mode := ((curr_mode & core#SYNCON_MASK) | mode)
+    writereg(core#SYNCCFG, 1, @mode)
+
 PUB SyncWord(val): curr_val
-' Set LoRa Syncword
+' Set Syncword
 '   Any other value polls the chip and returns the current setting
 
 PUB TXMode{}
