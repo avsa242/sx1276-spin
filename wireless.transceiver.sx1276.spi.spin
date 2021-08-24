@@ -151,8 +151,19 @@ PUB PresetFSK_RX4k8{}
 PUB AGCMode(state): curr_state
 ' Enable AGC
 '   Valid values:
-'       TRUE(-1 or 1), *FALSE (0)
+'       TRUE(-1 or 1): LNA gain is controlled by the AGC
+'       *FALSE (0): LNA gain is forced by the LNAGain() setting
 '   Any other value polls the chip and returns the current setting
+    curr_state := 0
+    readreg(core#RXCFG, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state) << core#AGCAUTOON
+        other:
+            return (((curr_state >> core#AGCAUTOON) & 1) == 1)
+
+    state := ((curr_state & core#AGCAUTOON_MASK) | state)
+    writereg(core#RXCFG, 1, @state)
 
 PUB CarrierFreq(freq): curr_freq | opmode_orig
 ' Set carrier frequency, in Hz

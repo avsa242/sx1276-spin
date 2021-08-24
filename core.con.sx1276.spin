@@ -124,7 +124,23 @@ CON
     BITRATELSB                  = $03
     FDEVMSB                     = $04
     FDEVLSB                     = $05
+
     RXCFG                       = $0D
+    RXCFG_MASK                  = $FF
+        RESTRX_ON_COLL          = 7
+        RSTRX_WO_PLOCK          = 6
+        RSTRX_W_PLOCK           = 5
+        AFCAUTOON               = 4
+        AGCAUTOON               = 3
+        RXTRIG                  = 0
+        RXTRIG_BITS             = %111
+        RESTRX_ON_COLL_MASK     = (1 << RESTRX_ON_COLL) ^ RXCFG_MASK
+        RSTRX_WO_PLOCK_MASK     = (1 << RSTRX_WO_PLOCK) ^ RXCFG_MASK
+        RSTRX_W_PLOCK_MASK      = (1 << RSTRX_W_PLOCK) ^ RXCFG_MASK
+        AFCAUTOON_MASK          = (1 << AFCAUTOON) ^ RXCFG_MASK
+        AGCAUTOON_MASK          = (1 << AGCAUTOON) ^ RXCFG_MASK
+        RXTRIG_MASK             = RXTRIG_BITS ^ RXCFG_MASK
+
     RSSICFG                     = $0E
     RSSICOLLISION               = $0F
     RSSITHRESH                  = $10
