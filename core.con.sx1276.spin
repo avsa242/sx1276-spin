@@ -16,8 +16,6 @@ CON
     SCK_MAX_FREQ                = 10_000_000
     SPI_MODE                    = 0
 
-    WRITE                       = 1 << 7        ' OR with reg_nr to signal write
-
     T_POR                       = 10_000        ' usec
     T_RESACTIVE                 = 100
     T_RES                       = 5_000
