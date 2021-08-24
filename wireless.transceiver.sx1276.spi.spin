@@ -179,6 +179,21 @@ PUB AddressCheck(mode): curr_mode
     mode := ((curr_mode & core#ADDRFILT_MASK) | mode)
     writereg(core#PKTCFG1, 1, @mode)
 
+PUB AFCAuto(state): curr_state
+' Enable automatic AFC
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    curr_state := 0
+    readreg(core#RXCFG, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state) << core#AFCAUTOON
+        other:
+            return (((curr_state >> core#AFCAUTOON) & 1) == 1)
+
+    state := ((curr_state & core#AFCAUTOON_MASK) | state)
+    writereg(core#RXCFG, 1, @state)
+
 PUB AGCMode(state): curr_state
 ' Enable AGC
 '   Valid values:
