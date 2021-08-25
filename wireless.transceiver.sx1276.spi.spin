@@ -783,6 +783,18 @@ PUB OpMode(mode): curr_mode | modemask
     mode := ((curr_mode & core#MODE_MASK) | mode)
     writereg(core#OPMODE, 1, @mode)
 
+PUB PayloadLen(len): curr_len
+' Set payload length, in bytes
+'   Valid values: 1..255 (LoRa), 1..2047 (FSK/OOK)
+'   Any other value polls the chip and returns the current setting
+            curr_len := 0
+            readreg(core#PKTCFG2, 2, @curr_len)
+            if lookdown(len: 1..2047)
+                len := ((curr_len & core#PAYLDLEN_MASK) | len)
+                writereg(core#PKTCFG2, 2, @len)
+            else
+                return (curr_len & core#PAYLDLEN_BITS)
+
 PUB PayloadLenCfg(mode): curr_mode
 ' Set payload length configuration/mode
 '   Valid values:
@@ -800,17 +812,13 @@ PUB PayloadLenCfg(mode): curr_mode
     mode := ((curr_mode & core#PKTFORMAT_MASK) | mode)
     writereg(core#PKTCFG1, 1, @mode)
 
-PUB PayloadLen(len): curr_len
-' Set payload length, in bytes
-'   Valid values: 1..255 (LoRa), 1..2047 (FSK/OOK)
-'   Any other value polls the chip and returns the current setting
-            curr_len := 0
-            readreg(core#PKTCFG2, 2, @curr_len)
-            if lookdown(len: 1..2047)
-                len := ((curr_len & core#PAYLDLEN_MASK) | len)
-                writereg(core#PKTCFG2, 2, @len)
-            else
-                return (curr_len & core#PAYLDLEN_BITS)
+PUB PayloadSent{}: flag
+' Flag indicating payload sent
+'   Returns:
+'       TRUE (-1): payload sent
+'       FALSE (0): payload not sent
+'   NOTE: Once set, this flag clears when exiting TX mode
+    return ((interrupt{} & INT_PACKETSENT) == INT_PACKETSENT)
 
 PUB PLLLocked{}: flag
 ' Return PLL lock status, while attempting a TX, RX, or CAD operation
