@@ -800,7 +800,7 @@ PUB PayloadLenCfg(mode): curr_mode
     mode := ((curr_mode & core#PKTFORMAT_MASK) | mode)
     writereg(core#PKTCFG1, 1, @mode)
 
-PUB PayloadLength(len): curr_len
+PUB PayloadLen(len): curr_len
 ' Set payload length, in bytes
 '   Valid values: 1..255 (LoRa), 1..2047 (FSK/OOK)
 '   Any other value polls the chip and returns the current setting
