@@ -838,6 +838,22 @@ PUB PreambleLen(length):  curr_len
             readreg(core#PREAMBLEMSB, 2, @curr_len)
             return curr_len
 
+PUB RCOscCal(state): curr_state
+' Trigger calibration of RC oscillator
+'   Valid values:
+'       TRUE (-1 or 1)
+'   Any other value is ignored
+    curr_state := 0
+    readreg(core#OSC, 1, @curr_state)
+    case ||(state)
+        1:
+            state := ||(state) << core#RCCALSTART
+        other:
+            return
+
+    state := (curr_state & core#RCCALSTART_MASK | state)
+    writereg(core#OSC, 1, @state)
+
 PUB Reset{}
 ' Perform soft-reset
     if lookdown(_RESET: 0..31)                  ' if a valid pin is set,
