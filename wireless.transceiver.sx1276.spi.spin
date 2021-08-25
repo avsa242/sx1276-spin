@@ -346,6 +346,20 @@ PUB DeviceID{}: id
     id := 0
     readreg(core#VERSION, 1, @id)
 
+PUB FIFOEmpty{}: flag
+' Flag indicating FIFO empty
+'   Returns:
+'       TRUE (-1): FIFO empty
+'       FALSE (0): FIFO contains at least one byte
+    return ((interrupt{} & INT_FIFOEMPTY) == INT_FIFOEMPTY)
+
+PUB FIFOFull{}: flag
+' Flag indicating FIFO full
+'   Returns:
+'       TRUE (-1): FIFO full
+'       FALSE (0): at least one byte available
+    return ((interrupt{} & INT_FIFOFULL) == INT_FIFOFULL)
+
 PUB FreqDeviation(fdev): curr_fdev
 ' Set carrier deviation, in Hz
 '   Valid values:
