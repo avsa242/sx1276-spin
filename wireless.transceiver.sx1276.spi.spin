@@ -360,6 +360,21 @@ PUB FIFOFull{}: flag
 '       FALSE (0): at least one byte available
     return ((interrupt{} & INT_FIFOFULL) == INT_FIFOFULL)
 
+PUB FIFOThreshold(thresh): curr_thr
+' Set threshold for triggering FIFO level interrupt
+'   Valid values: 1..64
+'   Any other value polls the chip and returns the current setting
+    curr_thr := 0
+    readreg(core#FIFOTHRESH, 1, @curr_thr)
+    case thresh
+        1..64:
+            thresh -= 1
+        other:
+            return (curr_thr & core#FIFOTHR_BITS)
+
+    thresh := ((curr_thr & core#FIFOTHR_MASK) | thresh)
+    writereg(core#FIFOTHRESH, 1, @thresh)
+
 PUB FreqDeviation(fdev): curr_fdev
 ' Set carrier deviation, in Hz
 '   Valid values:

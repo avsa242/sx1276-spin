@@ -245,6 +245,13 @@ CON
     BCASTADDR                   = $34
 
     FIFOTHRESH                  = $35
+    FIFOTHRESH_MASK             = $BF
+        TXSTARTCOND             = 7
+        FIFOTHR                 = 0
+        FIFOTHR_BITS            = %111111
+        TXSTARTCOND_MASK        = (1 << TXSTARTCOND) ^ FIFOTHRESH_MASK
+        FIFOTHR_MASK            = FIFOTHR_BITS ^ FIFOTHRESH_MASK
+
     SEQCFG1                     = $36
     SEQCFG2                     = $37
     TIMERRESOL                  = $38
