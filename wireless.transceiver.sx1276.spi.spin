@@ -747,6 +747,22 @@ PUB OCPCurrent(level): curr_lvl
     level := ((curr_lvl & core#OCPTRIM_MASK) | level)
     writereg(core#OCP, 1, @level)
 
+PUB OCProtect(state): curr_state
+' Enable over-current protection for PA
+'   Valid values:
+'      *TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    curr_state := 0
+    readreg(core#OCP, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state) << core#OCPON
+        other:
+            return (((curr_state >> core#OCPON) & 1) == 1)
+
+    state := ((curr_state & core#OCPON_MASK) | state) & core#OCP_MASK
+    writereg(core#OCP, 1, @state)
+
 PUB OpMode(mode): curr_mode | modemask
 ' Set device operating mode
 '   Valid values:
@@ -766,22 +782,6 @@ PUB OpMode(mode): curr_mode | modemask
 
     mode := ((curr_mode & core#MODE_MASK) | mode)
     writereg(core#OPMODE, 1, @mode)
-
-PUB OverCurrentProt(state): curr_state
-' Enable over-current protection for PA
-'   Valid values:
-'      *TRUE (-1 or 1), FALSE (0)
-'   Any other value polls the chip and returns the current setting
-    curr_state := 0
-    readreg(core#OCP, 1, @curr_state)
-    case ||(state)
-        0, 1:
-            state := ||(state) << core#OCPON
-        other:
-            return (((curr_state >> core#OCPON) & 1) == 1)
-
-    state := ((curr_state & core#OCPON_MASK) | state) & core#OCP_MASK
-    writereg(core#OCP, 1, @state)
 
 PUB PayloadLenCfg(mode): curr_mode
 ' Set payload length configuration/mode
