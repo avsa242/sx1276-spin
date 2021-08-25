@@ -109,6 +109,10 @@ CON
     ADDRCHK_CHK_NO_BCAST    = %01
     ADDRCHK_CHK_BCAST       = %10
 
+' Data modes
+    DATAMODE_CONT           = 0
+    DATAMODE_PKT            = 1
+
 VAR
 
     long _CS, _RESET
@@ -281,6 +285,22 @@ PUB CRCCheckEnabled(state): curr_state
 
     state := ((curr_state & core#CRCON_MASK) | state)
     writereg(core#PKTCFG1, 1, @state)
+
+PUB DataMode(mode): curr_mode
+' Set data processing mode
+'   Valid values:
+'       DATAMODE_CONT (0): Continuous mode
+'      *DATAMODE_PKT (1): Packet mode
+'   Any other value polls the chip and returns the current setting
+    readreg(core#PKTCFG2, 1, @curr_mode)
+    case mode
+        DATAMODE_CONT, DATAMODE_PKT:
+            mode := mode << core#DATAMODE
+        other:
+            return ((curr_mode >> core#DATAMODE) & 1)
+
+    mode := ((curr_mode & core#DATAMODE_MASK) | mode)
+    writereg(core#PKTCFG2, 1, @mode)
 
 PUB DataRate(rate): curr_rate
 ' Set on-air data rate, in bits per second
