@@ -259,7 +259,14 @@ CON
     TIMER2COEF                  = $3A
     IMAGECAL                    = $3B
     TEMP                        = $3C
+
     LOWBAT                      = $3D
+    LOWBAT_MASK                 = $0F
+        LOWBATON                = 3
+        LOWBATTRIM              = 0
+        LOWBATTRIM_BITS         = %111
+        LOWBATON_MASK           = (1 << LOWBATON) ^ LOWBAT_MASK
+        LOWBATTRIM_MASK         = LOWBATTRIM_BITS ^ LOWBAT_MASK
 
     IRQFLAGS1                   = $3E
     IRQFLAGS2                   = $3F

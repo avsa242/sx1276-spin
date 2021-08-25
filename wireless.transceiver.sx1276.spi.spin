@@ -621,6 +621,23 @@ PUB LNAGain(gain): curr_gain
     gain := ((curr_gain & core#LNAGAIN_MASK) | gain) & core#LNA_MASK
     writereg(core#LNA, 1, @curr_gain)
 
+PUB LowBattLevel(lvl): curr_lvl
+' Set low battery threshold, in millivolts
+'   Valid values:
+'       1695, 1764, *1835, 1905, 1976, 2045, 2116, 2185
+'   Any other value polls the chip and returns the current setting
+    curr_lvl := 0
+    readreg(core#LOWBAT, 1, @curr_lvl)
+    case lvl
+        1695, 1764, 1835, 1905, 1976, 2045, 2116, 2185:
+            lvl := lookdownz(lvl: 1695, 1764, 1835, 1905, 1976, 2045, 2116, 2185)
+        other:
+            curr_lvl &= core#LOWBATTRIM_BITS
+            return lookupz(curr_lvl: 1695, 1764, 1835, 1905, 1976, 2045, 2116, 2185)
+
+    lvl := ((curr_lvl & core#LOWBATTRIM_MASK) | lvl)
+    writereg(core#LOWBAT, 1, @lvl)
+
 PUB LowFreqMode(state): curr_state
 ' Enable Low frequency-specific register access
 '   Valid values:
