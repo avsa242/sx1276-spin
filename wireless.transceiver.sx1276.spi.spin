@@ -638,6 +638,21 @@ PUB LowBattLevel(lvl): curr_lvl
     lvl := ((curr_lvl & core#LOWBATTRIM_MASK) | lvl)
     writereg(core#LOWBAT, 1, @lvl)
 
+PUB LowBattMon(state): curr_state
+' Enable low battery detector signal
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    curr_state := 0
+    readreg(core#LOWBAT, 1, @curr_state)
+    case ||(state)
+        0, 1:
+            state := ||(state) << core#LOWBATON
+        other:
+            return (((curr_state >> core#LOWBATON) & 1) == 1)
+
+    state := ((curr_state & core#LOWBAT_MASK) | state)
+    writereg(core#LOWBAT, 1, @state)
+
 PUB LowFreqMode(state): curr_state
 ' Enable Low frequency-specific register access
 '   Valid values:
