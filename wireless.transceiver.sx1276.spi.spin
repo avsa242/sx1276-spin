@@ -218,6 +218,18 @@ PUB AGCMode(state): curr_state
     state := ((curr_state & core#AGCAUTOON_MASK) | state)
     writereg(core#RXCFG, 1, @state)
 
+PUB BroadcastAddress(addr): curr_addr
+' Set broadcast address
+'   Valid values: $00..$FF
+'   Any other value polls the chip and returns the current setting
+    case addr
+        $00..$FF:
+            writereg(core#BCASTADDR, 1, @addr)
+        other:
+            curr_addr := 0
+            readreg(core#BCASTADDR, 1, @curr_addr)
+            return
+
 PUB CarrierFreq(freq): curr_freq | opmode_orig
 ' Set carrier frequency, in Hz
 '   Valid values: See case table below

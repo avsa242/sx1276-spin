@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Oct 6, 2019
-    Updated Aug 24, 2021
+    Updated Aug 25, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -241,7 +241,9 @@ CON
         PAYLDLEN_MASK           = PAYLDLEN_BITS ^ PKTCFG2_PAYLDLEN_MASK
 
     NODEADRS                    = $33
-    BROADCASTADRS               = $34
+
+    BCASTADDR                   = $34
+
     FIFOTHRESH                  = $35
     SEQCFG1                     = $36
     SEQCFG2                     = $37
