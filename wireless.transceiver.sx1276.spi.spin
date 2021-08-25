@@ -826,8 +826,8 @@ PUB PLLLocked{}: flag
 '       0: PLL didn't lock
 '       1: PLL locked
 
-PUB PreambleLength(length):  curr_len
-' Set preamble length, in bits
+PUB PreambleLen(length):  curr_len
+' Set preamble length, in bytes
 '   Valid values: 0..65535 (default: 3)
 '   Any other value polls the chip and returns the current setting
     case length
