@@ -722,6 +722,31 @@ PUB NodeAddress(addr): curr_addr
             readreg(core#NODEADDR, 1, @curr_addr)
             return
 
+PUB OCPCurrent(level): curr_lvl
+' Trim over-current protection, to milliamps
+'   Valid values: 45..240mA
+'   Any other value polls the chip and returns the level setting
+    curr_lvl := 0
+    readreg(core#OCP, 1, @curr_lvl)
+    case level
+        45..120:
+            level := (level - 45) / 5
+        130..240:
+            level := (level - -30) / 10
+        other:
+            curr_lvl := curr_lvl & core#OCPTRIM
+            case curr_lvl
+                0..15:
+                    return 45 + 5 * curr_lvl
+                16..27:
+                    return -30 + 10 * curr_lvl
+                28..31:
+                    return 240
+            return
+
+    level := ((curr_lvl & core#OCPTRIM_MASK) | level)
+    writereg(core#OCP, 1, @level)
+
 PUB OpMode(mode): curr_mode | modemask
 ' Set device operating mode
 '   Valid values:
@@ -757,31 +782,6 @@ PUB OverCurrentProt(state): curr_state
 
     state := ((curr_state & core#OCPON_MASK) | state) & core#OCP_MASK
     writereg(core#OCP, 1, @state)
-
-PUB OverCurrentTrim(current): curr_val
-' Trim over-current protection, to milliamps
-'   Valid values: 45..240mA
-'   Any other value polls the chip and returns the current setting
-    curr_val := 0
-    readreg(core#OCP, 1, @curr_val)
-    case current
-        45..120:
-            current := (current - 45) / 5
-        130..240:
-            current := (current - -30) / 10
-        other:
-            curr_val := curr_val & core#OCPTRIM
-            case curr_val
-                0..15:
-                    return 45 + 5 * curr_val
-                16..27:
-                    return -30 + 10 * curr_val
-                28..31:
-                    return 240
-            return
-
-    current := ((curr_val & core#OCPTRIM_MASK) | current) & core#OCP_MASK
-    writereg(core#OCP, 1, @current)
 
 PUB PayloadLenCfg(mode): curr_mode
 ' Set payload length configuration/mode
