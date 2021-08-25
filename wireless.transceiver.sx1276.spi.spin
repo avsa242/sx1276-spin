@@ -961,7 +961,7 @@ PUB SyncWordEnabled(state): curr_state
     state := ((curr_state & core#SYNCON_MASK) | state)
     writereg(core#SYNCCFG, 1, @state)
 
-PUB SyncWordLength(length): curr_len
+PUB SyncWordLen(length): curr_len
 ' Set length of sync word, in bytes
 '   Valid values: 1..8
 '   Any other value polls the chip and returns the current setting
