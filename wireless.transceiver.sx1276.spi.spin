@@ -710,6 +710,18 @@ PUB Modulation(mode): curr_mode | lr_mode, opmode_orig
     time.usleep(core#T_POR)                     ' wait for chip to be ready
     opmode(opmode_orig)                         ' restore user's opmode
 
+PUB NodeAddress(addr): curr_addr
+' Set node address
+'   Valid values: $00..$FF
+'   Any other value polls the chip and returns the current setting
+    case addr
+        $00..$FF:
+            writereg(core#NODEADDR, 1, @addr)
+        other:
+            curr_addr := 0
+            readreg(core#NODEADDR, 1, @curr_addr)
+            return
+
 PUB OpMode(mode): curr_mode | modemask
 ' Set device operating mode
 '   Valid values:

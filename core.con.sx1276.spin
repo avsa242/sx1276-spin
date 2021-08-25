@@ -240,7 +240,7 @@ CON
         PAYLDLEN_BITS           = %111_11111111 ' bits from both regs
         PAYLDLEN_MASK           = PAYLDLEN_BITS ^ PKTCFG2_PAYLDLEN_MASK
 
-    NODEADRS                    = $33
+    NODEADDR                    = $33
 
     BCASTADDR                   = $34
 
