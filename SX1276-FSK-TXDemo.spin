@@ -5,7 +5,7 @@
     Description: Transmit demo of the SX1276 driver (LoRa mode)
     Copyright (c) 2021
     Started Dec 12, 2020
-    Updated Aug 22, 2021
+    Updated Aug 26, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -32,7 +32,7 @@ OBJ
     cfg     : "core.con.boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
-    lora    : "wireless.transceiver.sx1276.spi"
+    sx1276    : "wireless.transceiver.sx1276.spi"
     int     : "string.integer"
     sf      : "string.format"
 
@@ -40,53 +40,42 @@ VAR
 
     byte _buffer[256]
 
-PUB Main{} | count, bw
+PUB Main{} | count
 
     setup{}
-
     ser.position(0, 3)
     ser.strln(string("Transmit mode"))
 ' -- TX/RX settings
-    lora.presetfsk_tx4k8{}
+    sx1276.presetfsk_tx4k8{}
 
-'    lora.channel(0)                             ' US 902.3MHz + (chan# * 200kHz)
-'    lora.intclear(lora#INT_ALL)                 ' clear _all_ interrupts
-'    lora.fifotxbaseptr($00)                     ' use the whole 256-byte FIFO
-                                                '   for TX
-    lora.payloadlength(8)                       ' the test packets are
-' --                                            '   8 bytes
+    sx1276.carrierfreq(902_300_000)
+    sx1276.payloadlen(8)                        ' set to len of test pkts
+    sx1276.fifothreshold(7)
+' --
 
 ' -- TX-specific settings
-'    lora.txsigrouting(lora#PABOOST)             ' RFO, PABOOST (board-depend.)
-'    lora.txpower(4)                             ' -1..14 (RFO) 5..23 (PABOOST)
-'    lora.intmask(lora#TX_DONE)                  ' interrupt on transmit done
-'    lora.txcontinuous(lora#TXMODE_NORMAL)
+    sx1276.txstartcondition(sx1276#TXSTART_FIFOLVL)
+    sx1276.txsigrouting(sx1276#PABOOST)         ' RFO, PABOOST (board-depend.)
+    sx1276.txpower(5)                           ' -1..14 (RFO) 5..23 (PABOOST)
 ' --
-    lora.opmode(lora#RXCONT)
-    ser.dec(lora.opmode(-2))
-    repeat
-        ser.position(0, 5)
-        ser.dec(lora.rssi)
-    count := 0
+
     repeat
         bytefill(@_buffer, 0, 256)              ' clear temp TX buffer
-
         ' payload is the string 'TEST' with hexadecimal counter after
         sf.sprintf1(@_buffer, string("TEST%s"), int.hex(count, 4))
-        lora.opmode(lora#STDBY)
 
-        ' make sure the data is placed at the start of the TX FIFO
-        lora.txpayload(8, @_buffer)             ' queue the data
-        lora.txmode{}                           ' finally, transmit it
+        sx1276.txpayload(8, @_buffer)             ' queue the data
+        sx1276.txmode
 
-        ' wait until sending is complete, then clear the interrupt
-        repeat until lora.interrupt{} & lora#TX_DONE
-        lora.intclear(lora#TX_DONE)
+        ' wait until sending is complete
+        repeat until sx1276.payloadsent{}
+        sx1276.idle{}
 
         count++
         ser.position(0, 5)
         ser.str(string("Sending: "))
-        ser.str(@_buffer)
+        ser.strln(@_buffer)
+
         time.msleep(5000)                       ' wait in between packets
                                                 ' (don't abuse the airwaves)
 
@@ -96,7 +85,7 @@ PUB Setup{}
     time.msleep(30)
     ser.clear{}
     ser.strln(string("Serial terminal started"))
-    if lora.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN)
+    if sx1276.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN)
         ser.strln(string("SX1276 driver started"))
     else
         ser.strln(string("SX1276 driver failed to start - halting"))

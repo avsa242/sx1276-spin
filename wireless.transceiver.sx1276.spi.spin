@@ -6,7 +6,7 @@
         LoRa/FSK/OOK transceiver
     Copyright (c) 2021
     Started Oct 6, 2019
-    Updated Aug 22, 2021
+    Updated Aug 26, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -112,6 +112,10 @@ CON
 ' Data modes
     DATAMODE_CONT           = 0
     DATAMODE_PKT            = 1
+
+' Transmit start conditions
+    TXSTART_FIFOLVL         = 0
+    TXSTART_FIFONOTEMPTY    = 1
 
 VAR
 
@@ -701,7 +705,7 @@ PUB Modulation(mode): curr_mode | lr_mode, opmode_orig
         FSK, OOK:
             mode <<= core#MODTYPE
         other:
-            return (curr_mode >> core#MODTYPE) & core#MODTYPE_BITS
+            return ((curr_mode >> core#MODTYPE) & core#MODTYPE_BITS)
 
     ' set operating mode to SLEEP (required to change the LORAMODE bit)
     mode := (curr_mode & core#MODE_MASK & core#MODTYPE_MASK) | mode
@@ -1042,10 +1046,28 @@ PUB TXSigRouting(pin): curr_pin
         other:
             return _txsig_routing
 
+PUB TXStartCondition(cond): curr_cond
+' Define condition required to begin packet transmission
+'   Valid values:
+'       TXSTART_FIFOLVL (0): If the number of bytes in the FIFO exceeds
+'           FIFOThreshold()
+'      *TXSTART_FIFONOTEMPTY (1): If there's at least one byte in the FIFO
+'   Any other value polls the chip and returns the current setting
+    curr_cond := 0
+    readreg(core#FIFOTHRESH, 1, @curr_cond)
+    case cond
+        TXSTART_FIFOLVL, TXSTART_FIFONOTEMPTY:
+            cond <<= core#TXSTARTCOND
+        other:
+            return ((curr_cond >> core#TXSTARTCOND) & 1)
+
+    cond := ((curr_cond & core#TXSTARTCOND_MASK) | cond)
+    writereg(core#FIFOTHRESH, 1, @cond)
+
 PRI readReg(reg_nr, nr_bytes, ptr_buff) | tmp
 ' Read nr_bytes from device into ptr_buff
     case reg_nr
-        $00, $01..$2A, $2C, $2F, $31, $32, $39, $40, $42, $44, $4B, {
+        $00, $01..$2A, $2C, $2F, $31, $32, $35, $36, $38, $39, $3A, $3E, $40, $42, $44, $4B, {
 }       $4D, $5B, $5D, $61..$64, $70:
         other:
             return
@@ -1059,7 +1081,7 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff) | tmp
 ' Write nr_bytes from ptr_buff to device
     case reg_nr
         $00, $01..$0F, $10, $12, $16, $1D..$24, $26, $27, $2F, $31, {
-}       $32, $39, $40, $44, $4B, $4D, $5D, $61..$64, $70:
+}       $32, $35, $36, $38, $39, $3A, $3E, $40, $44, $4B, $4D, $5D, $61..$64, $70:
         other:
             return
 

@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2021
     Started Oct 6, 2019
-    Updated Aug 25, 2021
+    Updated Aug 26, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -26,17 +26,17 @@ CON
     FIFO                        = $00
 
     OPMODE                      = $01
-    OPMODEF_MASK                = $EF           ' chip in FSK/OOK mode
+    OPMODE_MASK                 = $6F           ' chip in FSK/OOK mode
         LORAMODE                = 7
         MODTYPE                 = 5
         LOWFREQMODEON           = 3
         MODE                    = 0
         MODTYPE_BITS            = %11
         MODE_BITS               = %111
-        LORAMODE_MASK           = (1 << LORAMODE) ^ OPMODEF_MASK
-        MODTYPE_MASK            = (MODTYPE_BITS << MODTYPE) ^ OPMODEF_MASK
-        LOWFREQMODEON_MASK      = (1 << LOWFREQMODEON) ^ OPMODEF_MASK
-        MODE_MASK               = MODE_BITS ^ OPMODEF_MASK
+        LORAMODE_MASK           = (1 << LORAMODE) ^ OPMODE_MASK
+        MODTYPE_MASK            = (MODTYPE_BITS << MODTYPE) ^ OPMODE_MASK
+        LOWFREQMODEON_MASK      = (1 << LOWFREQMODEON) ^ OPMODE_MASK
+        MODE_MASK               = MODE_BITS ^ OPMODE_MASK
 
     FRFMSB                      = $06
     FRFMID                      = $07
