@@ -1,7 +1,7 @@
 # sx1276-spin
 -------------
 
-This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the Semtech SX1276 LoRa/FSK/OOK transceiver.
+This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the Semtech SX1276 LoRa/FSK/OOK transceiver (FSK/OOK mode only).
 
 **IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or [p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P). Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
 
@@ -9,7 +9,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver object for the Semtech
 
 ## Salient Features
 
-* SPI connection at up to 1MHz (P1), 10MHz (P2)
+* SPI connection at 1MHz (P1), up to 10MHz (P2)
 * Change transceiver frequency to anything within the SX1276's tunable range
 * Change common transceiver settings, such as: bandwidth, payload length, LNA gain, transmit power
 * Change device operating mode
@@ -27,8 +27,8 @@ P2/SPIN2:
 
 ## Compiler Compatibility
 
-* P1/SPIN1: OpenSpin (tested with 1.00.81)
-* P2/SPIN2: FlexSpin (tested with 6.0.0)
+* P1/SPIN1: OpenSpin (tested with 1.00.81), FlexSpin (tested with 6.0.0-beta)
+* P2/SPIN2: FlexSpin (tested with 6.0.0-beta)
 * ~~BST~~ (incompatible - no preprocessor)
 * ~~Propeller Tool~~ (incompatible - no preprocessor)
 * ~~PNut~~ (incompatible - no preprocessor)

@@ -3,7 +3,7 @@
     Filename: wireless.transceiver.sx1276.spi.spin
     Author: Jesse Burt
     Description: Driver for the SEMTECH SX1276
-        LoRa/FSK/OOK transceiver
+        FSK/OOK transceiver
     Copyright (c) 2021
     Started Oct 6, 2019
     Updated Aug 26, 2021
@@ -374,7 +374,7 @@ PUB FIFOThreshold(thresh): curr_thr
         1..64:
             thresh -= 1
         other:
-            return (curr_thr & core#FIFOTHR_BITS)
+            return ((curr_thr & core#FIFOTHR_BITS) + 1)
 
     thresh := ((curr_thr & core#FIFOTHR_MASK) | thresh)
     writereg(core#FIFOTHRESH, 1, @thresh)
@@ -590,7 +590,7 @@ PUB Interrupt{}: mask
     mask := 0
     readreg(core#IRQFLAGS1, 2, @mask)
 
-PUB IntMask(mask): curr_mask    'XXX
+PUB IntMask(mask): curr_mask
 ' Set interrupt mask
 ' Clear interrupt flags
 '   Valid values:
@@ -789,7 +789,7 @@ PUB OpMode(mode): curr_mode | modemask
 
 PUB PayloadLen(len): curr_len
 ' Set payload length, in bytes
-'   Valid values: 1..255 (LoRa), 1..2047 (FSK/OOK)
+'   Valid values: 1..2047 (FSK/OOK)
 '   Any other value polls the chip and returns the current setting
             curr_len := 0
             readreg(core#PKTCFG2, 2, @curr_len)
@@ -815,6 +815,14 @@ PUB PayloadLenCfg(mode): curr_mode
 
     mode := ((curr_mode & core#PKTFORMAT_MASK) | mode)
     writereg(core#PKTCFG1, 1, @mode)
+
+PUB PayloadReady{}: flag
+' Flag indicating payload received/ready
+'   Returns:
+'       TRUE (-1): payload ready
+'       FALSE (0): no payload received
+'   NOTE: Once set, this flag clears when FIFO is emptied
+    return ((interrupt{} & INT_PAYLDREADY) == INT_PAYLDREADY)
 
 PUB PayloadSent{}: flag
 ' Flag indicating payload sent
@@ -1066,28 +1074,26 @@ PUB TXStartCondition(cond): curr_cond
 
 PRI readReg(reg_nr, nr_bytes, ptr_buff) | tmp
 ' Read nr_bytes from device into ptr_buff
-    case reg_nr
-        $00, $01..$2A, $2C, $2F, $31, $32, $35, $36, $38, $39, $3A, $3E, $40, $42, $44, $4B, {
-}       $4D, $5B, $5D, $61..$64, $70:
+    case reg_nr                                 ' validate register #
+        $00..$16, $1A..$42, $44..$4D, $5B, $5D, $61..$64, $70:
         other:
             return
 
     outa[_CS] := 0
     spi.wr_byte(reg_nr)
-    spi.rdblock_msbf(ptr_buff, nr_bytes)
+    spi.rdblock_msbf(ptr_buff, nr_bytes)        ' read MS-byte first
     outa[_CS] := 1
 
 PRI writeReg(reg_nr, nr_bytes, ptr_buff) | tmp
 ' Write nr_bytes from ptr_buff to device
-    case reg_nr
-        $00, $01..$0F, $10, $12, $16, $1D..$24, $26, $27, $2F, $31, {
-}       $32, $35, $36, $38, $39, $3A, $3E, $40, $44, $4B, $4D, $5D, $61..$64, $70:
+    case reg_nr                                 ' validate register #
+        $00..$10, $12..$16, $1A..$3B, $3D..$41, $44..$4D, $5D, $61..$64, $70:
         other:
             return
 
     outa[_CS] := 0
-    spi.wr_byte(reg_nr | core#SPI_WR)
-    spi.wrblock_msbf(ptr_buff, nr_bytes)
+    spi.wr_byte(reg_nr | core#SPI_WR)           ' must set WNR bit to write
+    spi.wrblock_msbf(ptr_buff, nr_bytes)        ' write MS-byte first
     outa[_CS] := 1
 
 DAT

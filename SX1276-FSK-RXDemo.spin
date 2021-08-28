@@ -2,10 +2,10 @@
     --------------------------------------------
     Filename: SX1276-RXDemo.spin
     Author: Jesse Burt
-    Description: Receive demo of the SX1276 driver (LoRa mode)
+    Description: Receive demo of the SX1276 driver (FSK)
     Copyright (c) 2021
-    Started Dec 12, 2020
-    Updated Aug 22, 2021
+    Started Aug 26, 2021
+    Updated Aug 28, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -32,59 +32,64 @@ OBJ
     cfg     : "core.con.boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
-    lora    : "wireless.transceiver.sx1276.spi"
+    sx1276  : "wireless.transceiver.sx1276.spi"
     int     : "string.integer"
 
 VAR
 
     byte _buffer[256]
 
-PUB Main{}
+PUB Main{} | sw[2], payld_len
 
     setup{}
 
     ser.position(0, 3)
     ser.strln(string("Receive mode"))
+    sx1276.presetfsk_rx4k8{}                    ' FSK, 4800bps
 
 ' -- TX/RX settings
-    lora.presetlora{}                           ' factory defaults + LoRa mode
-    lora.channel(0)                             ' US 902.3MHz + (chan# * 200kHz)
-    lora.intclear(lora#INT_ALL)                 ' clear _all_ interrupts
-    lora.fiforxbaseptr($00)                     ' use the whole 256-byte FIFO
-                                                '   for RX
-    lora.payloadlength(8)                       ' the expected test packets are
-' --                                            '   8 bytes
+    sx1276.carrierfreq(902_300_000)             ' US 902.3MHz
+    sx1276.payloadlen(8)                        ' test packet size
+    payld_len := sx1276.payloadlen(-2)          ' read back from radio
+    sx1276.fifothreshold(payld_len-1)           ' trigger int at payld len-1
+    sw[0] := $E7E7E7E7                          ' sync word bytes
+    sw[1] := $E7E7E7E7
+    sx1276.syncwordlen(8)                       ' 1..8
+    sx1276.syncword(sx1276#SW_WRITE, @sw)
+    sx1276.payloadlencfg(sx1276#PKTLEN_FIXED)   ' fixed-length payload
+' --
 
 ' -- RX-specific settings
-    lora.rxmode{}
-    lora.intmask(lora#RX_DONE)                  ' interrupt when receive done
+    sx1276.rxmode{}
 
     ' change these if having difficulty with reception
-    lora.lnagain(0)                             ' 0, -6, -12, -24, -26, -48 dB
-    lora.agcmode(false)                         ' true, false (LNAGain() is
-                                                ' ignored if true)
+    sx1276.lnagain(0)                           ' -6, -12, -24, -26, -48 dB
+                                                ' or LNA_AGC (0), LNA_HIGH (1)
+    sx1276.rssithresh(-80)                      ' set rcvd signal level thresh
+                                                '   considered a valid signal
+                                                ' -127..0 (dBm)
 ' --
 
     repeat
-        ' wait for the radio to finish receiving, then clear the interrupt
-        repeat until lora.interrupt{} & lora#RX_DONE
-        lora.intclear(lora#RX_DONE)
+        bytefill(@_buffer, 0, 256)              ' clear local RX buffer
+        sx1276.rxmode{}                         ' ready to receive
 
-        lora.fifoaddrpointer(lora.fiforxcurrentaddr{})
-        lora.rxpayload(8, @_buffer)             ' get the data from the radio
+        ' wait for the radio to finish receiving
+        repeat until sx1276.payloadready{}
+        sx1276.rxpayload(payld_len, @_buffer)   ' get the data from the radio
+        sx1276.idle{}                           ' go back to standby
 
         ' display the received payload on the terminal
         ser.position(0, 5)
-        ser.str(string("Received: "))
-        ser.str(@_buffer)
-    
+        ser.hexdump(@_buffer, 0, 4, payld_len, 16 <# payld_len)
+
 PUB Setup{}
 
     ser.start(SER_BAUD)
     time.msleep(30)
     ser.clear{}
     ser.strln(string("Serial terminal started"))
-    if lora.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN)
+    if sx1276.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN)
         ser.str(string("SX1276 driver started"))
     else
         ser.strln(string("SX1276 driver failed to start - halting"))
