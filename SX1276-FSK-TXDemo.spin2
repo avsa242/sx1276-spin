@@ -5,7 +5,7 @@
     Description: Transmit demo of the SX1276 driver (FSK, P2 version)
     Copyright (c) 2022
     Started Aug 26, 2021
-    Updated Aug 20, 2022
+    Updated Aug 21, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -43,7 +43,7 @@ PUB Main() | count, sw[2], payld_len
 
     setup()
     ser.position(0, 3)
-    ser.strln(string("Transmit mode"))
+    ser.strln(@"Transmit mode")
     sx1276.presetfsk_tx4k8()                    ' FSK, 4800bps
 
 ' -- TX/RX settings
@@ -73,7 +73,7 @@ PUB Main() | count, sw[2], payld_len
     repeat
         bytefill(@_buffer, 0, 256)              ' clear temp TX buffer
         ' payload is the string 'TEST' with hexadecimal counter after
-        str.sprintf(@_buffer, string("TEST%04.4x"), @count)
+        str.sprintf1(@_buffer, @"TEST%04.4x", count)
 
         sx1276.txpayload(payld_len, @_buffer)   ' queue the data
         sx1276.txmode()
@@ -84,7 +84,7 @@ PUB Main() | count, sw[2], payld_len
 
         count++
         ser.position(0, 7)
-        ser.str(string("Sending: "))
+        ser.str(@"Sending: ")
         ser.strln(@_buffer)
 
         waitms(5000)                            ' wait in between packets
@@ -95,11 +95,11 @@ PUB Setup()
     ser.start(SER_BAUD)
     waitms(30)
     ser.clear()
-    ser.strln(string("Serial terminal started"))
+    ser.strln(@"Serial terminal started")
     if sx1276.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SPI_HZ, RESET_PIN)
-        ser.strln(string("SX1276 driver started"))
+        ser.strln(@"SX1276 driver started")
     else
-        ser.strln(string("SX1276 driver failed to start - halting"))
+        ser.strln(@"SX1276 driver failed to start - halting")
         repeat
 
 DAT
