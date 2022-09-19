@@ -1,12 +1,11 @@
 {
     --------------------------------------------
-    Filename: wireless.transceiver.sx1276.spi.spin
+    Filename: wireless.transceiver.sx1276.spin
     Author: Jesse Burt
-    Description: Driver for the SEMTECH SX1276
-        FSK/OOK transceiver
-    Copyright (c) 2021
+    Description: Driver for the SEMTECH SX1276 FSK/OOK transceiver
+    Copyright (c) 2022
     Started Oct 6, 2019
-    Updated Aug 26, 2021
+    Updated Sep 19, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -129,10 +128,10 @@ OBJ
     time: "time"
     u64 : "math.unsigned64"
 
-PUB Null{}
+PUB null{}
 ' This is not a top-level object
 
-PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN): status
+PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN): status
 ' Start using custom I/O settings
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and {
 }   lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
@@ -150,26 +149,27 @@ PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN): status
     ' Lastly - make sure you have at least one free core/cog
     return FALSE
 
-PUB Stop{}
-
+PUB stop{}
+' Stop the driver
     spi.deinit{}
+    longfill(@_CS, 0, 3)
 
-PUB Defaults{}
+PUB defaults{}
 ' Set factory defaults
 
-PUB PresetFSK_TX4k8{}
+PUB presetfsk_tx4k8{}
 ' TX FSK, 4.8kbps
     reset{}
 
     modulation(FSK)
 
-PUB PresetFSK_RX4k8{}
+PUB presetfsk_rx4k8{}
 ' RX FSK, 4.8kbps
     reset{}
 
     modulation(FSK)
 
-PUB AddressCheck(mode): curr_mode
+PUB addresscheck(mode): curr_mode
 ' Enable address checking/matching/filtering
 '   Valid values:
 '       ADDRCHK_NONE (%00): No address check
@@ -187,7 +187,7 @@ PUB AddressCheck(mode): curr_mode
     mode := ((curr_mode & core#ADDRFILT_MASK) | mode)
     writereg(core#PKTCFG1, 1, @mode)
 
-PUB AFCAuto(state): curr_state
+PUB afcauto(state): curr_state
 ' Enable automatic AFC
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -202,14 +202,14 @@ PUB AFCAuto(state): curr_state
     state := ((curr_state & core#AFCAUTOON_MASK) | state)
     writereg(core#RXCFG, 1, @state)
 
-PUB AFCOffset{}: offs
+PUB afcoffset{}: offs
 ' Read AFC frequency offset
 '   Returns: Frequency offset in Hz
     offs := 0
     readreg(core#AFCMSB, 2, @offs)
     return (~~offs) * FSTEP
 
-PUB AGCMode(state): curr_state
+PUB agcmode(state): curr_state
 ' Enable AGC
 '   Valid values:
 '       TRUE(-1 or 1): LNA gain is controlled by the AGC
@@ -226,7 +226,7 @@ PUB AGCMode(state): curr_state
     state := ((curr_state & core#AGCAUTOON_MASK) | state)
     writereg(core#RXCFG, 1, @state)
 
-PUB BroadcastAddress(addr): curr_addr
+PUB broadcastaddress(addr): curr_addr
 ' Set broadcast address
 '   Valid values: $00..$FF
 '   Any other value polls the chip and returns the current setting
@@ -238,7 +238,7 @@ PUB BroadcastAddress(addr): curr_addr
             readreg(core#BCASTADDR, 1, @curr_addr)
             return
 
-PUB CarrierFreq(freq): curr_freq | opmode_orig
+PUB carrierfreq(freq): curr_freq | opmode_orig
 ' Set carrier frequency, in Hz
 '   Valid values: See case table below
 '   Any other value polls the chip and returns the current setting
@@ -256,7 +256,7 @@ PUB CarrierFreq(freq): curr_freq | opmode_orig
             readreg(core#FRFMSB, 3, @curr_freq)
             return u64.multdiv(FSTEP, curr_freq, FPSCALE)
 
-PUB ClkOut(divisor): curr_div
+PUB clkout(divisor): curr_div
 ' Set clkout frequency, as a divisor of FXOSC
 '   Valid values:
 '       1, 2, 4, 8, 16, 32, CLKOUT_RC (6), CLKOUT_OFF (7)
@@ -275,7 +275,7 @@ PUB ClkOut(divisor): curr_div
     divisor := ((curr_div & core#CLKOUT_MASK) | divisor) & core#OSC_MASK
     writereg(core#OSC, 1, @divisor)
 
-PUB CRCCheckEnabled(state): curr_state
+PUB crccheckenabled(state): curr_state
 ' Enable CRC calculation (TX) and checking (RX)
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -290,7 +290,7 @@ PUB CRCCheckEnabled(state): curr_state
     state := ((curr_state & core#CRCON_MASK) | state)
     writereg(core#PKTCFG1, 1, @state)
 
-PUB DataMode(mode): curr_mode
+PUB datamode(mode): curr_mode
 ' Set data processing mode
 '   Valid values:
 '       DATAMODE_CONT (0): Continuous mode
@@ -306,7 +306,7 @@ PUB DataMode(mode): curr_mode
     mode := ((curr_mode & core#DATAMODE_MASK) | mode)
     writereg(core#PKTCFG2, 1, @mode)
 
-PUB DataRate(rate): curr_rate
+PUB datarate(rate): curr_rate
 ' Set on-air data rate, in bits per second
 '   Valid values:
 '       1_200..300_000
@@ -322,7 +322,7 @@ PUB DataRate(rate): curr_rate
             readreg(core#BITRATEMSB, 2, @curr_rate)
             return (FXOSC / curr_rate)
 
-PUB DataWhitening(state): curr_state
+PUB datawhitening(state): curr_state
 ' Enable data whitening
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -341,7 +341,7 @@ PUB DataWhitening(state): curr_state
     state := ((curr_state & core#DCFREE_MASK) | state)
     writereg(core#PKTCFG1, 1, @state)
 
-PUB DeviceID{}: id
+PUB deviceid{}: id
 ' Version code of the chip
 '   Returns:
 '       Bits 7..4: full revision number
@@ -350,21 +350,21 @@ PUB DeviceID{}: id
     id := 0
     readreg(core#VERSION, 1, @id)
 
-PUB FIFOEmpty{}: flag
+PUB fifoempty{}: flag
 ' Flag indicating FIFO empty
 '   Returns:
 '       TRUE (-1): FIFO empty
 '       FALSE (0): FIFO contains at least one byte
     return ((interrupt{} & INT_FIFOEMPTY) == INT_FIFOEMPTY)
 
-PUB FIFOFull{}: flag
+PUB fifofull{}: flag
 ' Flag indicating FIFO full
 '   Returns:
 '       TRUE (-1): FIFO full
 '       FALSE (0): at least one byte available
     return ((interrupt{} & INT_FIFOFULL) == INT_FIFOFULL)
 
-PUB FIFOThreshold(thresh): curr_thr
+PUB fifothreshold(thresh): curr_thr
 ' Set threshold for triggering FIFO level interrupt
 '   Valid values: 1..64
 '   Any other value polls the chip and returns the current setting
@@ -379,7 +379,7 @@ PUB FIFOThreshold(thresh): curr_thr
     thresh := ((curr_thr & core#FIFOTHR_MASK) | thresh)
     writereg(core#FIFOTHRESH, 1, @thresh)
 
-PUB FreqDeviation(fdev): curr_fdev
+PUB freqdeviation(fdev): curr_fdev
 ' Set carrier deviation, in Hz
 '   Valid values:
 '       600..300_000
@@ -396,7 +396,7 @@ PUB FreqDeviation(fdev): curr_fdev
             readreg(core#FDEVMSB, 2, @curr_fdev)
             return u64.multdiv(curr_fdev, FSTEP, FPSCALE)
 
-PUB FreqError{}: ferr | tmp, bw
+PUB freqerror{}: ferr | tmp, bw
 ' Estimated frequency error from modem
     ferr := 0
     readreg(core#FEIMSB, 3, @ferr)
@@ -404,7 +404,7 @@ PUB FreqError{}: ferr | tmp, bw
     ferr := u64.multdiv(ferr, TWO_24, FXOSC)
     return ferr * (bw / 500)
 
-PUB FSKRampTime(ramptime): curr_time
+PUB fskramptime(ramptime): curr_time
 ' Set Rise/fall time of FSK ramp up/down, in microseconds
 '   Valid values: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, *40, 31, 25, 20, 15, 12, 10
 '   Any other value polls the chip and returns the current setting
@@ -423,7 +423,7 @@ PUB FSKRampTime(ramptime): curr_time
     ramptime := ((curr_time & core#PA_RAMP_MASK) | ramptime)
     writereg(core#PARAMP, 1, @ramptime)
 
-PUB GaussianFilter(mode): curr_mode
+PUB gaussianfilter(mode): curr_mode
 ' Set Gaussian filter/data shaping modeeters
 '   Valid values:
 '      *BT_NONE (0): No shaping
@@ -441,7 +441,7 @@ PUB GaussianFilter(mode): curr_mode
     mode := ((curr_mode & core#MODSHP_MASK) | mode)
     writereg(core#PARAMP, 1, @mode)
 
-PUB GPIO0(mode): curr_mode
+PUB gpio0(mode): curr_mode
 ' Assert DIO0 pin on set mode
 '   Valid values:
 '       DIO0_RXDONE (0) - Packet reception complete
@@ -458,7 +458,7 @@ PUB GPIO0(mode): curr_mode
     mode := ((curr_mode & core#DIO0MAP_MASK) | mode) & core#DIOMAP1_MASK
     writereg(core#DIOMAP1, 1, @mode)
 
-PUB GPIO1(mode): curr_mode
+PUB gpio1(mode): curr_mode
 ' Assert DIO1 pin on set mode
 '   Valid values:
 '       DIO1_RXTIMEOUT (0) - Packet reception timed out
@@ -475,7 +475,7 @@ PUB GPIO1(mode): curr_mode
     mode := ((curr_mode & core#DIO1MAP_MASK) | mode) & core#DIOMAP1_MASK
     writereg(core#DIOMAP1, 1, @mode)
 
-PUB GPIO2(mode): curr_mode
+PUB gpio2(mode): curr_mode
 ' Assert DIO2 pin on set mode
 '   Valid values:
 '       DIO2_FHSSCHANGECHANNEL (0) - FHSS Changed channel
@@ -493,7 +493,7 @@ PUB GPIO2(mode): curr_mode
     mode := ((curr_mode & core#DIO2MAP_MASK) | mode) & core#DIOMAP1_MASK
     writereg(core#DIOMAP1, 1, @mode)
 
-PUB GPIO3(mode): curr_mode
+PUB gpio3(mode): curr_mode
 ' Assert DIO3 pin on set mode
 '   Valid values:
 '       DIO3_CADDONE (0) - Channel Activity Detection complete
@@ -510,7 +510,7 @@ PUB GPIO3(mode): curr_mode
     mode := ((curr_mode & core#DIO3MAP_MASK) | mode) & core#DIOMAP1_MASK
     writereg(core#DIOMAP1, 1, @mode)
 
-PUB GPIO4(mode): curr_mode
+PUB gpio4(mode): curr_mode
 ' Assert DIO4 pin on set mode
 '   Valid values:
 '       DIO4_CADDETECTED (0) - Channel Activity Detected
@@ -527,7 +527,7 @@ PUB GPIO4(mode): curr_mode
     mode := ((curr_mode & core#DIO4MAP_MASK) | mode) & core#DIOMAP2_MASK
     writereg(core#DIOMAP2, 1, @mode)
 
-PUB GPIO5(mode): curr_mode
+PUB gpio5(mode): curr_mode
 ' Assert DIO5 pin on set mode
 '   Valid values:
 '       DIO5_MODEREADY (0) - Requested operation mode is ready
@@ -544,11 +544,11 @@ PUB GPIO5(mode): curr_mode
     mode := ((curr_mode & core#DIO5MAP_MASK) | mode) & core#DIOMAP2_MASK
     writereg(core#DIOMAP2, 1, @mode)
 
-PUB Idle{}
+PUB idle{}
 ' Change chip state to idle (standby)
     opmode(STDBY)
 
-PUB IntClear(mask)
+PUB intclear(mask)
 ' Clear interrupt flags
 '   Valid values:
 '   Bits 15..0
@@ -567,7 +567,7 @@ PUB IntClear(mask)
     else
         return
 
-PUB Interrupt{}: mask
+PUB interrupt{}: mask
 ' Read interrupt flags
 '   Returns: Interrupt flags as a mask
 '   Bits 15..0
@@ -590,7 +590,7 @@ PUB Interrupt{}: mask
     mask := 0
     readreg(core#IRQFLAGS1, 2, @mask)
 
-PUB IntMask(mask): curr_mask
+PUB intmask(mask): curr_mask
 ' Set interrupt mask
 ' Clear interrupt flags
 '   Valid values:
@@ -606,7 +606,7 @@ PUB IntMask(mask): curr_mask
     else
         return
 
-PUB LNAGain(gain): curr_gain
+PUB lnagain(gain): curr_gain
 ' Set LNA gain, in dB
 '   Valid values: *0 (Maximum gain), -6, -12, -24, -36, -48
 '   Any other value polls the chip and returns the current setting
@@ -625,7 +625,7 @@ PUB LNAGain(gain): curr_gain
     gain := ((curr_gain & core#LNAGAIN_MASK) | gain) & core#LNA_MASK
     writereg(core#LNA, 1, @curr_gain)
 
-PUB LowBattLevel(lvl): curr_lvl
+PUB lowbattlevel(lvl): curr_lvl
 ' Set low battery threshold, in millivolts
 '   Valid values:
 '       1695, 1764, *1835, 1905, 1976, 2045, 2116, 2185
@@ -642,7 +642,7 @@ PUB LowBattLevel(lvl): curr_lvl
     lvl := ((curr_lvl & core#LOWBATTRIM_MASK) | lvl)
     writereg(core#LOWBAT, 1, @lvl)
 
-PUB LowBattMon(state): curr_state
+PUB lowbattmon(state): curr_state
 ' Enable low battery detector signal
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -657,7 +657,7 @@ PUB LowBattMon(state): curr_state
     state := ((curr_state & core#LOWBAT_MASK) | state)
     writereg(core#LOWBAT, 1, @state)
 
-PUB LowFreqMode(state): curr_state
+PUB lowfreqmode(state): curr_state
 ' Enable Low frequency-specific register access
 '   Valid values:
 '       TRUE (-1 or 1), FALSE (0)
@@ -673,7 +673,7 @@ PUB LowFreqMode(state): curr_state
     state := ((curr_state & core#LOWFREQMODEON_MASK) | state)
     writereg(core#OPMODE, 1, @state)
 
-PUB ManchesterEnc(state): curr_state
+PUB manchesterenc(state): curr_state
 ' Enable Manchester encoding/decoding
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -692,7 +692,7 @@ PUB ManchesterEnc(state): curr_state
     state := ((curr_state & core#DCFREE_MASK) | state)
     writereg(core#PKTCFG1, 1, @state)
 
-PUB Modulation(mode): curr_mode | lr_mode, opmode_orig
+PUB modulation(mode): curr_mode | lr_mode, opmode_orig
 ' Set modulation type
 '   Valid values:
 '      *FSK (0): FSK packet radio mode
@@ -714,7 +714,7 @@ PUB Modulation(mode): curr_mode | lr_mode, opmode_orig
     time.usleep(core#T_POR)                     ' wait for chip to be ready
     opmode(opmode_orig)                         ' restore user's opmode
 
-PUB NodeAddress(addr): curr_addr
+PUB nodeaddress(addr): curr_addr
 ' Set node address
 '   Valid values: $00..$FF
 '   Any other value polls the chip and returns the current setting
@@ -726,7 +726,7 @@ PUB NodeAddress(addr): curr_addr
             readreg(core#NODEADDR, 1, @curr_addr)
             return
 
-PUB OCPCurrent(level): curr_lvl
+PUB ocpcurrent(level): curr_lvl
 ' Trim over-current protection, to milliamps
 '   Valid values: 45..240mA
 '   Any other value polls the chip and returns the level setting
@@ -751,7 +751,7 @@ PUB OCPCurrent(level): curr_lvl
     level := ((curr_lvl & core#OCPTRIM_MASK) | level)
     writereg(core#OCP, 1, @level)
 
-PUB OCProtect(state): curr_state
+PUB ocprotect(state): curr_state
 ' Enable over-current protection for PA
 '   Valid values:
 '      *TRUE (-1 or 1), FALSE (0)
@@ -767,7 +767,7 @@ PUB OCProtect(state): curr_state
     state := ((curr_state & core#OCPON_MASK) | state) & core#OCP_MASK
     writereg(core#OCP, 1, @state)
 
-PUB OpMode(mode): curr_mode | modemask
+PUB opmode(mode): curr_mode | modemask
 ' Set device operating mode
 '   Valid values:
 '       SLEEPMODE (%000): Sleep
@@ -787,7 +787,7 @@ PUB OpMode(mode): curr_mode | modemask
     mode := ((curr_mode & core#MODE_MASK) | mode)
     writereg(core#OPMODE, 1, @mode)
 
-PUB PayloadLen(len): curr_len
+PUB payloadlen(len): curr_len
 ' Set payload length, in bytes
 '   Valid values: 1..2047 (FSK/OOK)
 '   Any other value polls the chip and returns the current setting
@@ -799,7 +799,7 @@ PUB PayloadLen(len): curr_len
             else
                 return (curr_len & core#PAYLDLEN_BITS)
 
-PUB PayloadLenCfg(mode): curr_mode
+PUB payloadlencfg(mode): curr_mode
 ' Set payload length configuration/mode
 '   Valid values:
 '       PKTLEN_FIXED (0): Fixed-length payload
@@ -816,7 +816,7 @@ PUB PayloadLenCfg(mode): curr_mode
     mode := ((curr_mode & core#PKTFORMAT_MASK) | mode)
     writereg(core#PKTCFG1, 1, @mode)
 
-PUB PayloadReady{}: flag
+PUB layloadready{}: flag
 ' Flag indicating payload received/ready
 '   Returns:
 '       TRUE (-1): payload ready
@@ -824,7 +824,7 @@ PUB PayloadReady{}: flag
 '   NOTE: Once set, this flag clears when FIFO is emptied
     return ((interrupt{} & INT_PAYLDREADY) == INT_PAYLDREADY)
 
-PUB PayloadSent{}: flag
+PUB payloadsent{}: flag
 ' Flag indicating payload sent
 '   Returns:
 '       TRUE (-1): payload sent
@@ -832,13 +832,13 @@ PUB PayloadSent{}: flag
 '   NOTE: Once set, this flag clears when exiting TX mode
     return ((interrupt{} & INT_PACKETSENT) == INT_PACKETSENT)
 
-PUB PLLLocked{}: flag
+PUB plllocked{}: flag
 ' Return PLL lock status, while attempting a TX, RX, or CAD operation
 '   Returns:
 '       0: PLL didn't lock
 '       1: PLL locked
 
-PUB PreambleLen(length):  curr_len
+PUB preamblelen(length):  curr_len
 ' Set preamble length, in bytes
 '   Valid values: 0..65535 (default: 3)
 '   Any other value polls the chip and returns the current setting
@@ -850,7 +850,7 @@ PUB PreambleLen(length):  curr_len
             readreg(core#PREAMBLEMSB, 2, @curr_len)
             return curr_len
 
-PUB RCOscCal(state): curr_state
+PUB rcosccal(state): curr_state
 ' Trigger calibration of RC oscillator
 '   Valid values:
 '       TRUE (-1 or 1)
@@ -866,7 +866,7 @@ PUB RCOscCal(state): curr_state
     state := (curr_state & core#RCCALSTART_MASK | state)
     writereg(core#OSC, 1, @state)
 
-PUB Reset{}
+PUB reset{}
 ' Perform soft-reset
     if lookdown(_RESET: 0..31)                  ' if a valid pin is set,
         outa[_RESET] := 0                       ' pull NRESET low for 100uS,
@@ -875,13 +875,13 @@ PUB Reset{}
         dira[_RESET] := 0                       '   then let it float
         time.usleep(core#T_RES)                 ' wait for the chip to be ready
 
-PUB RSSI{}: val
+PUB rssi{}: val
 ' Current RSSI, in dBm
     val := 0
         readreg(core#RSSIVALUE, 1, @val)
         return -(val / 2)
 
-PUB RSSIThresh(thresh): curr_thr
+PUB rssithresh(thresh): curr_thr
 ' Set threshold for triggering RSSI interrupt, in dBm
 '   Valid values: -127..0
 '   Any other value polls the chip and returns the current setting
@@ -894,7 +894,7 @@ PUB RSSIThresh(thresh): curr_thr
             readreg(core#RSSITHRESH, 1, @curr_thr)
             return -(curr_thr / 2)
 
-PUB RXBandwidth(bw): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
+PUB rxbandwidth(bw): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
 ' Set receive bandwidth, in Hz (* single side-band)
 '   Valid values:
 '       2604, 3125, 3906, 5208, 6250, 7812, 10416, 12500, 15625,
@@ -927,11 +927,11 @@ PUB RXBandwidth(bw): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
     bw := ((curr_bw & core#RX_BW_MASK) | bw)
     writereg(core#RXBW, 1, @bw)
 
-PUB RXMode{}
+PUB rxmode{}
 ' Change chip state to RX (receive)
     opmode(RXCONT)
 
-PUB RXPayload(nr_bytes, ptr_buff)
+PUB rxpayload(nr_bytes, ptr_buff)
 ' Receive data from RX FIFO into buffer at ptr_buff
 '   Valid values: nr_bytes - 1..255
 '   Any other value is ignored
@@ -941,11 +941,11 @@ PUB RXPayload(nr_bytes, ptr_buff)
         other:
             return
 
-PUB Sleep{}
+PUB sleep{}
 ' Power down chip
     opmode(SLEEPMODE)
 
-PUB SyncWord(rw, ptr_buff)
+PUB syncword(rw, ptr_buff)
 ' Set sync word to value at ptr_buff
 '   Valid values:
 '       rw: SW_READ (0), SW_WRITE (1)
@@ -958,7 +958,7 @@ PUB SyncWord(rw, ptr_buff)
         other:
             readreg(core#SYNCVALUE1, 8, ptr_buff)
 
-PUB SyncWordEnabled(state): curr_state
+PUB syncwordenabled(state): curr_state
 ' Enable sync word generation (TX) and detection (RX)
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -973,7 +973,7 @@ PUB SyncWordEnabled(state): curr_state
     state := ((curr_state & core#SYNCON_MASK) | state)
     writereg(core#SYNCCFG, 1, @state)
 
-PUB SyncWordLen(length): curr_len
+PUB syncwordlen(length): curr_len
 ' Set length of sync word, in bytes
 '   Valid values: 1..8
 '   Any other value polls the chip and returns the current setting
@@ -988,11 +988,11 @@ PUB SyncWordLen(length): curr_len
     length := ((curr_len & core#SYNCSZ_MASK) | length)
     writereg(core#SYNCCFG, 1, @length)
 
-PUB TXMode{}
+PUB txmode{}
 ' Change chip state to transmit
     opmode(TX)
 
-PUB TXPayload(nr_bytes, ptr_buff)
+PUB txpayload(nr_bytes, ptr_buff)
 ' Queue data to be transmitted in the TX FIFO
 '   nr_bytes Valid values: 1..255
 '   Any other value is ignored
@@ -1002,7 +1002,7 @@ PUB TXPayload(nr_bytes, ptr_buff)
         other:
             return
 
-PUB TXPower(pwr): curr_pwr | pa_dac
+PUB txpower(pwr): curr_pwr | pa_dac
 ' Set transmit power, in dBm
 '   Valid values:
 '       -1..14 (when TXSigRouting() == RFO)
@@ -1041,7 +1041,7 @@ PUB TXPower(pwr): curr_pwr | pa_dac
         other:
             return (curr_pwr & core#OUTPUTPWR_BITS) - 1
 
-PUB TXSigRouting(pin): curr_pin
+PUB txsigrouting(pin): curr_pin
 ' Set transmit signal output routing
 '   Valid values:
 '      *RFO (0): Signal routed to RFO pin, max power is +14dBm
@@ -1054,7 +1054,7 @@ PUB TXSigRouting(pin): curr_pin
         other:
             return _txsig_routing
 
-PUB TXStartCondition(cond): curr_cond
+PUB txstartcondition(cond): curr_cond
 ' Define condition required to begin packet transmission
 '   Valid values:
 '       TXSTART_FIFOLVL (0): If the number of bytes in the FIFO exceeds
@@ -1072,7 +1072,7 @@ PUB TXStartCondition(cond): curr_cond
     cond := ((curr_cond & core#TXSTARTCOND_MASK) | cond)
     writereg(core#FIFOTHRESH, 1, @cond)
 
-PRI readReg(reg_nr, nr_bytes, ptr_buff) | tmp
+PRI readreg(reg_nr, nr_bytes, ptr_buff) | tmp
 ' Read nr_bytes from device into ptr_buff
     case reg_nr                                 ' validate register #
         $00..$16, $1A..$42, $44..$4D, $5B, $5D, $61..$64, $70:
@@ -1084,7 +1084,7 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff) | tmp
     spi.rdblock_msbf(ptr_buff, nr_bytes)        ' read MS-byte first
     outa[_CS] := 1
 
-PRI writeReg(reg_nr, nr_bytes, ptr_buff) | tmp
+PRI writereg(reg_nr, nr_bytes, ptr_buff) | tmp
 ' Write nr_bytes from ptr_buff to device
     case reg_nr                                 ' validate register #
         $00..$10, $12..$16, $1A..$3B, $3D..$41, $44..$4D, $5D, $61..$64, $70:

@@ -2,7 +2,7 @@
     --------------------------------------------
     Filename: core.con.sx1276.spin
     Author: Jesse Burt
-    Description: Low-level constants
+    Description: SX1276-specific constants
     Copyright (c) 2021
     Started Oct 6, 2019
     Updated Aug 26, 2021
