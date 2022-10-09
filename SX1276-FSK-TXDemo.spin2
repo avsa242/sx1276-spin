@@ -5,7 +5,7 @@
     Description: Transmit demo of the SX1276 driver (FSK, P2 version)
     Copyright (c) 2022
     Started Aug 26, 2021
-    Updated Aug 21, 2022
+    Updated Oct 9, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -19,12 +19,11 @@ CON
     SER_BAUD        = 2_000_000
     LED             = cfg.LED1
 
-    CS_PIN          = 8
-    SCK_PIN         = 9
-    MOSI_PIN        = 10
-    MISO_PIN        = 11
-    RESET_PIN       = 12                        ' use is recommended
-                                                '   (-1 to disable)
+    CS_PIN          = 0
+    SCK_PIN         = 1
+    MOSI_PIN        = 12
+    MISO_PIN        = 13
+    RESET_PIN       = 14                        ' optional (-1 to disable)
     SPI_HZ          = 10_000_000                ' max is 10_000_000
 ' --
 
@@ -39,47 +38,47 @@ VAR
 
     byte _buffer[256]
 
-PUB Main() | count, sw[2], payld_len
+PUB main() | count, sw[2], payld_len
 
     setup()
     ser.position(0, 3)
     ser.strln(@"Transmit mode")
-    sx1276.presetfsk_tx4k8()                    ' FSK, 4800bps
+    sx1276.preset_fsk_tx_4k8()                  ' FSK, 4800bps
 
 ' -- TX/RX settings
-    sx1276.carrierfreq(902_300_000)
-    sx1276.payloadlen(8)                        ' set to len of test pkts
-    payld_len := sx1276.payloadlen()            ' read it back, to verify
-    sx1276.fifothreshold(payld_len-1)           ' trigger int at payld len-1
+    sx1276.carrier_freq(902_300_000)
+    sx1276.payld_len(8)                         ' set to len of test pkts
+    payld_len := sx1276.payld_len()             ' read it back, to verify
+    sx1276.fifo_int_thresh(payld_len-1)         ' trigger int at payld len-1
 
     sw[0] := $E7E7E7E7                          ' sync word bytes
     sw[1] := $E7E7E7E7
-    sx1276.syncwordlen(8)                       ' 1..8
-    sx1276.syncword(1, @sw)
-    sx1276.payloadlencfg(sx1276.PKTLEN_FIXED)   ' fixed-length payload
+    sx1276.sync_word_len(8)                     ' 1..8
+    sx1276.sync_word(1, @sw)
+    sx1276.payld_len_cfg(sx1276.PKTLEN_FIXED)   ' fixed-length payload
 ' --
 
 ' -- TX-specific settings
-    ' transmit power
-    sx1276.txsigrouting(sx1276.PABOOST)         ' RFO, PABOOST (board-depend.)
-    sx1276.txpower(5)                           ' -1..14 (RFO) 5..23 (PABOOST)
+    { transmit power }
+    sx1276.tx_sig_routing(sx1276.PABOOST)       ' RFO, PABOOST (board-depend.)
+    sx1276.tx_pwr(5)                            ' -1..14 (RFO) 5..23 (PABOOST)
 
-    ' tell the radio to wait until the FIFO reaches the level set by
-    '   FIFOThreshold() to actually transmit
-    sx1276.txstartcondition(sx1276.TXSTART_FIFOLVL)
+    { tell the radio to wait until the FIFO reaches the level set by }
+    {   fifo_int_thresh() to actually transmit }
+    sx1276.tx_start_cond(sx1276.TXSTART_FIFOLVL)
 ' --
 
     count := 0
     repeat
         bytefill(@_buffer, 0, 256)              ' clear temp TX buffer
-        ' payload is the string 'TEST' with hexadecimal counter after
+        { payload is the string 'TEST' with hexadecimal counter after }
         str.sprintf1(@_buffer, @"TEST%04.4x", count)
 
-        sx1276.txpayload(payld_len, @_buffer)   ' queue the data
-        sx1276.txmode()
+        sx1276.tx_payld(payld_len, @_buffer)    ' queue the data
+        sx1276.tx_mode()
 
-        ' wait until sending is complete
-        repeat until sx1276.payloadsent()
+        { wait until sending is complete }
+        repeat until sx1276.payld_sent()
         sx1276.idle()
 
         count++
@@ -90,7 +89,7 @@ PUB Main() | count, sw[2], payld_len
         waitms(5000)                            ' wait in between packets
                                                 ' (don't abuse the airwaves)
 
-PUB Setup()
+PUB setup()
 
     ser.start(SER_BAUD)
     waitms(30)
