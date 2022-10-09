@@ -377,7 +377,7 @@ PUB fifo_int_thresh(thresh): curr_thr
     thresh := ((curr_thr & core#FIFOTHR_MASK) | thresh)
     writereg(core#FIFOTHRESH, 1, @thresh)
 
-PUB freq_deviation(fdev): curr_fdev
+PUB freq_dev(fdev): curr_fdev
 ' Set carrier deviation, in Hz
 '   Valid values:
 '       600..300_000
@@ -398,11 +398,11 @@ PUB freq_error{}: ferr | tmp, bw
 ' Estimated frequency error from modem
     ferr := 0
     readreg(core#FEIMSB, 3, @ferr)
-    bw := rx_bandw(-2)
+    bw := rx_bw(-2)
     ferr := u64.multdiv(ferr, TWO_24, FXOSC)
     return ferr * (bw / 500)
 
-PUB fsk_ramp_time(ramptime): curr_time
+PUB pa_ramp_time(ramptime): curr_time
 ' Set Rise/fall time of FSK ramp up/down, in microseconds
 '   Valid values: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, *40, 31, 25, 20, 15, 12, 10
 '   Any other value polls the chip and returns the current setting
@@ -590,7 +590,6 @@ PUB interrupt{}: mask
 
 PUB int_mask(mask): curr_mask   'XXX
 ' Set interrupt mask
-' Clear interrupt flags
 '   Valid values:
 '   Bits 15..0
 '       11: RSSI exceeds rssi_int_thresh()
@@ -892,7 +891,7 @@ PUB rssi_int_thresh(thresh): curr_thr
             readreg(core#RSSITHRESH, 1, @curr_thr)
             return -(curr_thr / 2)
 
-PUB rx_bandw(bw): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
+PUB rx_bw(bw): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
 ' Set receive bandwidth, in Hz (* single side-band)
 '   Valid values:
 '       2604, 3125, 3906, 5208, 6250, 7812, 10416, 12500, 15625,
@@ -943,7 +942,7 @@ PUB sleep{}
 ' Power down chip
     opmode(SLEEPMODE)
 
-PUB sync_word(rw, ptr_buff)
+PUB syncwd(rw, ptr_buff)
 ' Set sync word to value at ptr_buff
 '   Valid values:
 '       rw: SW_READ (0), SW_WRITE (1)
@@ -956,7 +955,7 @@ PUB sync_word(rw, ptr_buff)
         other:
             readreg(core#SYNCVALUE1, 8, ptr_buff)
 
-PUB sync_word_ena(state): curr_state
+PUB syncwd_ena(state): curr_state
 ' Enable sync word generation (TX) and detection (RX)
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
@@ -971,7 +970,7 @@ PUB sync_word_ena(state): curr_state
     state := ((curr_state & core#SYNCON_MASK) | state)
     writereg(core#SYNCCFG, 1, @state)
 
-PUB sync_word_len(length): curr_len
+PUB syncwd_len(length): curr_len
 ' Set length of sync word, in bytes
 '   Valid values: 1..8
 '   Any other value polls the chip and returns the current setting
