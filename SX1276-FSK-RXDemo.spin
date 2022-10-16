@@ -5,7 +5,7 @@
     Description: Receive demo of the SX1276 driver (FSK)
     Copyright (c) 2022
     Started Aug 26, 2021
-    Updated Oct 9, 2022
+    Updated Oct 16, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -28,7 +28,7 @@ CON
 
 OBJ
 
-    cfg     : "core.con.boardcfg.flip"
+    cfg     : "boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
     sx1276  : "wireless.transceiver.sx1276"
@@ -52,8 +52,8 @@ PUB main{} | sw[2], payld_len
     sx1276.fifo_int_thresh(payld_len-1)         ' trigger int at payld len-1
     sw[0] := $E7E7E7E7                          ' sync word bytes
     sw[1] := $E7E7E7E7
-    sx1276.sync_word_len(8)                     ' 1..8
-    sx1276.sync_word(sx1276#SW_WRITE, @sw)
+    sx1276.syncwd_len(8)                     ' 1..8
+    sx1276.syncwd(sx1276#SW_WRITE, @sw)
     sx1276.payld_len_cfg(sx1276#PKTLEN_FIXED)   ' fixed-length payload
 ' --
 
