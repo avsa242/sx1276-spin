@@ -5,7 +5,7 @@
     Description: Transmit demo of the SX1276 driver (FSK)
     Copyright (c) 2022
     Started Aug 26, 2021
-    Updated Oct 16, 2022
+    Updated Nov 13, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -32,16 +32,16 @@ OBJ
     ser   : "com.serial.terminal.ansi"
     time  : "time"
     sx1276: "wireless.transceiver.sx1276"
-    str   : "string.format"
+    str   : "string"
 
 VAR
 
     byte _buffer[256]
 
-PUB main{} | count, sw[2], payld_len
+PUB main{} | count, payld_len
 
     setup{}
-    ser.position(0, 3)
+    ser.pos_xy(0, 3)
     ser.strln(string("Transmit mode"))
     sx1276.preset_fsk_tx_4k8{}                  ' FSK, 4800bps
 
@@ -51,16 +51,14 @@ PUB main{} | count, sw[2], payld_len
     payld_len := sx1276.payld_len(-2)           ' read it back, to verify
     sx1276.fifo_int_thresh(payld_len-1)         ' trigger int at payld len-1
 
-    sw[0] := $E7E7E7E7                          ' sync word bytes
-    sw[1] := $E7E7E7E7
-    sx1276.syncwd_len(8)                     ' 1..8
-    sx1276.syncwd(1, @sw)
+    sx1276.syncwd_len(8)                        ' syncword length 1..8
+    sx1276.set_syncwd(string($E7, $E7, $E7, $E7, $E7, $E7, $E7, $E7))
     sx1276.payld_len_cfg(sx1276#PKTLEN_FIXED)   ' fixed-length payload
 ' --
 
 ' -- TX-specific settings
     { transmit power }
-    sx1276.tx_sig_routing(sx1276#PABOOST)       ' RFO, PABOOST (board-depend.)
+    sx1276.tx_sig_routing(sx1276#PABOOST)       ' RFO, PABOOST (board-dependent)
     sx1276.tx_pwr(5)                            ' -1..14 (RFO) 5..23 (PABOOST)
 
     { tell the radio to wait until the FIFO reaches the level set by }
@@ -82,7 +80,7 @@ PUB main{} | count, sw[2], payld_len
         sx1276.idle{}
 
         count++
-        ser.position(0, 7)
+        ser.pos_xy(0, 7)
         ser.str(string("Sending: "))
         ser.strln(@_buffer)
 

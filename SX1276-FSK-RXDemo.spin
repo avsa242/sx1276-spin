@@ -5,7 +5,7 @@
     Description: Receive demo of the SX1276 driver (FSK)
     Copyright (c) 2022
     Started Aug 26, 2021
-    Updated Oct 16, 2022
+    Updated Nov 13, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -41,7 +41,7 @@ PUB main{} | sw[2], payld_len
 
     setup{}
 
-    ser.position(0, 3)
+    ser.pos_xy(0, 3)
     ser.strln(string("Receive mode"))
     sx1276.preset_fsk_rx_4k8{}                  ' FSK, 4800bps
 
@@ -50,10 +50,8 @@ PUB main{} | sw[2], payld_len
     sx1276.payld_len(8)                         ' test packet size
     payld_len := sx1276.payld_len(-2)           ' read back from radio
     sx1276.fifo_int_thresh(payld_len-1)         ' trigger int at payld len-1
-    sw[0] := $E7E7E7E7                          ' sync word bytes
-    sw[1] := $E7E7E7E7
-    sx1276.syncwd_len(8)                     ' 1..8
-    sx1276.syncwd(sx1276#SW_WRITE, @sw)
+    sx1276.syncwd_len(8)                        ' syncword length 1..8
+    sx1276.set_syncwd(string($E7, $E7, $E7, $E7, $E7, $E7, $E7, $E7))
     sx1276.payld_len_cfg(sx1276#PKTLEN_FIXED)   ' fixed-length payload
 ' --
 
@@ -78,7 +76,7 @@ PUB main{} | sw[2], payld_len
         sx1276.idle{}                           ' go back to standby
 
         ' display the received payload on the terminal
-        ser.position(0, 5)
+        ser.pos_xy(0, 5)
         ser.hexdump(@_buffer, 0, 4, payld_len, 16 <# payld_len)
 
 PUB setup{}

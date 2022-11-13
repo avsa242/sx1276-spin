@@ -5,7 +5,7 @@
     Description: Driver for the SEMTECH SX1276 FSK/OOK transceiver (P2 version)
     Copyright (c) 2022
     Started Oct 6, 2019
-    Updated Oct 9, 2022
+    Updated Nov 13, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -155,6 +155,7 @@ PUB stop()
 
 PUB defaults()
 ' Set factory defaults
+    reset{}
 
 PUB preset_fsk_tx_4k8()
 ' TX FSK, 4.8kbps
@@ -941,18 +942,17 @@ PUB sleep()
 ' Power down chip
     opmode(SLEEPMODE)
 
-PUB syncwd(rw, ptr_buff)
-' Set sync word to value at ptr_buff
-'   Valid values:
-'       rw: SW_READ (0), SW_WRITE (1)
-'       variable at address ptr_buff: All bytes can be $00..$FF
-'   For rw, any value other than SW_WRITE (1) polls the chip and returns the current setting
+PUB set_syncwd(ptr_syncwd)
+' Set sync word
+'   ptr_syncwd: pointer to copy syncword data from
+'   NOTE: 8 bytes will be read from ptr_syncwd
+    writereg(core.SYNCVALUE1, 8, ptr_syncwd)
+
+PUB syncwd(ptr_buff): ptr_syncwd
+' Get current sync word
+'   ptr_syncwd: pointer to copy syncword data to
 '   NOTE: Variable pointed to by ptr_buff must be at least 8 bytes in length
-    case rw
-        SW_WRITE:
-            writereg(core.SYNCVALUE1, 8, ptr_buff)
-        other:
-            readreg(core.SYNCVALUE1, 8, ptr_buff)
+    readreg(core.SYNCVALUE1, 8, ptr_syncwd)
 
 PUB syncwd_ena(state=-2): curr_state
 ' Enable sync word generation (TX) and detection (RX)
