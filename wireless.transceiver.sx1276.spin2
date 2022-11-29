@@ -5,7 +5,7 @@
     Description: Driver for the SEMTECH SX1276 FSK/OOK transceiver (P2 version)
     Copyright (c) 2022
     Started Oct 6, 2019
-    Updated Nov 13, 2022
+    Updated Nov 29, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -125,7 +125,6 @@ OBJ
 
     spi : "com.spi.25mhz"
     core: "core.con.sx1276"
-    u64 : "math.unsigned64"
 
 PUB null()
 ' This is not a top-level object
@@ -244,7 +243,7 @@ PUB carrier_freq(freq=-2): curr_freq | opmode_orig
     opmode_orig := 0
     case freq
         137_000_000..175_000_000, 410_000_000..525_000_000, 862_000_000..1_020_000_000:
-            freq := u64.multdiv(freq, FPSCALE, FSTEP)
+            freq := muldiv64(freq, FPSCALE, FSTEP)
             opmode_orig := opmode()
             opmode(STDBY)
             writereg(core.FRFMSB, 3, @freq)
@@ -252,7 +251,7 @@ PUB carrier_freq(freq=-2): curr_freq | opmode_orig
         other:
             curr_freq := 0
             readreg(core.FRFMSB, 3, @curr_freq)
-            return u64.multdiv(FSTEP, curr_freq, FPSCALE)
+            return muldiv64(FSTEP, curr_freq, FPSCALE)
 
 PUB clk_out(divisor=-2): curr_div
 ' Set clkout frequency, as a divisor of FXOSC
@@ -387,39 +386,20 @@ PUB freq_dev(fdev=-2): curr_fdev
     case fdev
         600..300_000:
             ' freq deviation reg = (freq deviation / FSTEP)
-            fdev := u64.multdiv(fdev, FPSCALE, FSTEP)
+            fdev := muldiv64(fdev, FPSCALE, FSTEP)
             writereg(core.FDEVMSB, 2, @fdev)
         other:
             curr_fdev := 0
             readreg(core.FDEVMSB, 2, @curr_fdev)
-            return u64.multdiv(curr_fdev, FSTEP, FPSCALE)
+            return muldiv64(curr_fdev, FSTEP, FPSCALE)
 
-PUB freq_error(): ferr | tmp, bw
+PUB freq_error(): ferr | bw
 ' Estimated frequency error from modem
     ferr := 0
     readreg(core.FEIMSB, 3, @ferr)
     bw := rx_bw()
-    ferr := u64.multdiv(ferr, TWO_24, FXOSC)
-    return ferr * (bw / 500)
-
-PUB pa_ramp_time(ramptime=-2): curr_time
-' Set Rise/fall time of FSK ramp up/down, in microseconds
-'   Valid values: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, *40, 31, 25, 20, 15, 12, 10
-'   Any other value polls the chip and returns the current setting
-    curr_time := 0
-    readreg(core.PARAMP, 1, @curr_time)
-    case ramptime
-        3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12,{
-}       10:
-            ramptime := lookdownz(ramptime: 3400, 2000, 1000, 500, 250, 125,{
-}           100, 62, 50, 40, 31, 25, 20, 15, 12, 10)
-        other:
-            curr_time &= core.PA_RAMP_BITS
-            return lookupz(curr_time: 3400, 2000, 1000, 500, 250, 125, 100,{
-}           62, 50, 40, 31, 25, 20, 15, 12, 10)
-
-    ramptime := ((curr_time & core.PA_RAMP_MASK) | ramptime)
-    writereg(core.PARAMP, 1, @ramptime)
+    ferr := muldiv64(ferr, TWO_24, FXOSC)
+    return (ferr * (bw / 500))
 
 PUB gaussian_filt(mode=-2): curr_mode
 ' Set Gaussian filter/data shaping parameters
@@ -784,6 +764,24 @@ PUB opmode(mode=-2): curr_mode | modemask
     mode := ((curr_mode & core.MODE_MASK) | mode)
     writereg(core.OPMODE, 1, @mode)
 
+PUB pa_ramp_time(ramptime=-2): curr_time
+' Set Rise/fall time of FSK ramp up/down, in microseconds
+'   Valid values: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, *40, 31, 25, 20, 15, 12, 10
+'   Any other value polls the chip and returns the current setting
+    curr_time := 0
+    readreg(core.PARAMP, 1, @curr_time)
+    case ramptime
+        3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10:
+            ramptime := lookdownz(ramptime: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, {
+}                                           25, 20, 15, 12, 10)
+        other:
+            curr_time &= core.PA_RAMP_BITS
+            return lookupz(curr_time: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, {
+}                                     20, 15, 12, 10)
+
+    ramptime := ((curr_time & core.PA_RAMP_MASK) | ramptime)
+    writereg(core.PARAMP, 1, @ramptime)
+
 PUB payld_len(len=-2): curr_len
 ' Set payload length, in bytes
 '   Valid values: 1..2047 (FSK/OOK)
@@ -911,9 +909,9 @@ PUB rx_bw(bw=-2): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
                 repeat mant from 2 to 0
                     mant_tmp := lookupz(mant: 16, 20, 24)
                     rxb_calc := FXOSC / (mant_tmp * (1 << (exp + exp_mod)))
-                    if rxb_calc >= bw
+                    if (rxb_calc >= bw)
                         quit
-                if rxb_calc >= bw
+                if (rxb_calc >= bw)
                     quit
             bw := (mant << 3) | exp
         other:

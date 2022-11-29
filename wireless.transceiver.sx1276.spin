@@ -5,7 +5,7 @@
     Description: Driver for the SEMTECH SX1276 FSK/OOK transceiver
     Copyright (c) 2022
     Started Oct 6, 2019
-    Updated Nov 13, 2022
+    Updated Nov 29, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -395,32 +395,13 @@ PUB freq_dev(fdev): curr_fdev
             readreg(core#FDEVMSB, 2, @curr_fdev)
             return u64.multdiv(curr_fdev, FSTEP, FPSCALE)
 
-PUB freq_error{}: ferr | tmp, bw
+PUB freq_error{}: ferr | bw
 ' Estimated frequency error from modem
     ferr := 0
     readreg(core#FEIMSB, 3, @ferr)
     bw := rx_bw(-2)
     ferr := u64.multdiv(ferr, TWO_24, FXOSC)
-    return ferr * (bw / 500)
-
-PUB pa_ramp_time(ramptime): curr_time
-' Set Rise/fall time of FSK ramp up/down, in microseconds
-'   Valid values: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, *40, 31, 25, 20, 15, 12, 10
-'   Any other value polls the chip and returns the current setting
-    curr_time := 0
-    readreg(core#PARAMP, 1, @curr_time)
-    case ramptime
-        3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12,{
-}       10:
-            ramptime := lookdownz(ramptime: 3400, 2000, 1000, 500, 250, 125,{
-}           100, 62, 50, 40, 31, 25, 20, 15, 12, 10)
-        other:
-            curr_time &= core#PA_RAMP_BITS
-            return lookupz(curr_time: 3400, 2000, 1000, 500, 250, 125, 100,{
-}           62, 50, 40, 31, 25, 20, 15, 12, 10)
-
-    ramptime := ((curr_time & core#PA_RAMP_MASK) | ramptime)
-    writereg(core#PARAMP, 1, @ramptime)
+    return (ferr * (bw / 500))
 
 PUB gaussian_filt(mode): curr_mode
 ' Set Gaussian filter/data shaping parameters
@@ -600,7 +581,7 @@ PUB int_mask(mask): curr_mask   'XXX
 '       0: Battery voltage < low batt threshold
 '   Any other value is ignored
     if (mask & core#WR_CLR_BITS)
-            writereg(core#IRQFLAGS1, 2, @mask)
+        writereg(core#IRQFLAGS1, 2, @mask)
     else
         return
 
@@ -785,6 +766,24 @@ PUB opmode(mode): curr_mode | modemask
     mode := ((curr_mode & core#MODE_MASK) | mode)
     writereg(core#OPMODE, 1, @mode)
 
+PUB pa_ramp_time(ramptime): curr_time
+' Set Rise/fall time of FSK ramp up/down, in microseconds
+'   Valid values: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, *40, 31, 25, 20, 15, 12, 10
+'   Any other value polls the chip and returns the current setting
+    curr_time := 0
+    readreg(core#PARAMP, 1, @curr_time)
+    case ramptime
+        3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10:
+            ramptime := lookdownz(ramptime: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, {
+}                                           25, 20, 15, 12, 10)
+        other:
+            curr_time &= core#PA_RAMP_BITS
+            return lookupz(curr_time: 3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, {
+}                                     20, 15, 12, 10)
+
+    ramptime := ((curr_time & core#PA_RAMP_MASK) | ramptime)
+    writereg(core#PARAMP, 1, @ramptime)
+
 PUB payld_len(len): curr_len
 ' Set payload length, in bytes
 '   Valid values: 1..2047 (FSK/OOK)
@@ -912,9 +911,9 @@ PUB rx_bw(bw): curr_bw | exp_mod, exp, mant, mant_tmp, rxb_calc
                 repeat mant from 2 to 0
                     mant_tmp := lookupz(mant: 16, 20, 24)
                     rxb_calc := FXOSC / (mant_tmp * (1 << (exp + exp_mod)))
-                    if rxb_calc => bw
+                    if (rxb_calc => bw)
                         quit
-                if rxb_calc => bw
+                if (rxb_calc => bw)
                     quit
             bw := (mant << 3) | exp
         other:
