@@ -1,99 +1,97 @@
 {
-    --------------------------------------------
-    Filename: SX1276-FSK-RXDemo.spin
-    Author: Jesse Burt
-    Description: Receive demo of the SX1276 driver (FSK)
-    Copyright (c) 2022
-    Started Aug 26, 2021
-    Updated Nov 13, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       SX1276-FSK-RXDemo.spin
+    Description:    Demo of the SX1276 driver
+        * Receive (FSK)
+    Author:         Jesse Burt
+    Started:        Aug 26, 2021
+    Updated:        Oct 14, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkmode        = cfg#_clkmode
-    _xinfreq        = cfg#_xinfreq
+    _clkmode        = xtal1+pll16x
+    _xinfreq        = 5_000_000
 
-' -- User-modifiable constants
-    SER_BAUD        = 115_200
-    LED             = cfg#LED1
-
-    CS_PIN          = 0
-    SCK_PIN         = 1
-    MOSI_PIN        = 2
-    MISO_PIN        = 3
-    RESET_PIN       = 4                         ' optional (-1 to disable)
-' --
 
 OBJ
 
-    cfg     : "boardcfg.flip"
-    ser     : "com.serial.terminal.ansi"
-    time    : "time"
-    sx1276  : "wireless.transceiver.sx1276"
+    time:   "time"
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
+    radio:  "wireless.transceiver.sx1276" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
+
 
 VAR
 
-    byte _buffer[256]
+    byte _buffer[radio.PAYLD_LEN_MAX]
 
-PUB main{} | sw[2], payld_len
 
-    setup{}
+PUB main() | sw[2], payld_len
+
+    setup()
 
     ser.pos_xy(0, 3)
-    ser.strln(string("Receive mode"))
-    sx1276.preset_fsk_rx_4k8{}                  ' FSK, 4800bps
+    ser.strln(@"Receive mode")
 
 ' -- TX/RX settings
-    sx1276.carrier_freq(902_300_000)            ' US 902.3MHz
-    sx1276.payld_len(8)                         ' test packet size
-    payld_len := sx1276.payld_len(-2)           ' read back from radio
-    sx1276.fifo_int_thresh(payld_len-1)         ' trigger int at payld len-1
-    sx1276.syncwd_len(8)                        ' syncword length 1..8
-    sx1276.set_syncwd(string($E7, $E7, $E7, $E7, $E7, $E7, $E7, $E7))
-    sx1276.payld_len_cfg(sx1276#PKTLEN_FIXED)   ' fixed-length payload
+    ' NOTE: These settings _must_ match the transmitting node
+    radio.preset_fsk_rx_4k8()                   ' preset settings: FSK, 4800bps
+    radio.carrier_freq(902_300_000)             ' US 902.3MHz
+    radio.payld_len(8)                          ' set to length of test pkts
+    radio.payld_len_cfg(radio.PKTLEN_FIXED)     ' fixed-length payload
+    payld_len := radio.payld_len()              ' read back from radio
+    radio.fifo_int_thresh(payld_len-1)          ' trigger int at payld len-1
+    radio.syncwd_len(8)                         ' syncword length 1..8
+    radio.set_syncwd( string($E7, $E7, $E7, $E7, $E7, $E7, $E7, $E7) )
 ' --
 
 ' -- RX-specific settings
-    sx1276.rx_mode{}
+    radio.rx_mode()
 
     ' change these if having difficulty with reception
-    sx1276.lna_gain(0)                          ' -6, -12, -24, -26, -48 dB
+    radio.lna_gain(0)                           ' -6, -12, -24, -26, -48 dB
                                                 ' or LNA_AGC (0), LNA_HIGH (1)
-    sx1276.rssi_int_thresh(-80)                 ' set rcvd signal level thresh
+    radio.rssi_int_thresh(-80)                  ' set rcvd signal level thresh
                                                 '   considered a valid signal
                                                 ' -127..0 (dBm)
 ' --
 
     repeat
-        bytefill(@_buffer, 0, 256)              ' clear local RX buffer
-        sx1276.rx_mode{}                        ' ready to receive
+        ' clear the temporary receive buffer and set up the radio for reception
+        bytefill(@_buffer, 0, radio.PAYLD_LEN_MAX)
+        radio.rx_mode()
 
         ' wait for the radio to finish receiving
-        repeat until sx1276.payld_rdy{}
-        sx1276.rx_payld(payld_len, @_buffer)    ' get the data from the radio
-        sx1276.idle{}                           ' go back to standby
+        repeat
+        until radio.payld_rdy()
+        radio.rx_payld(payld_len, @_buffer)     ' get the data from the radio
+        radio.idle()                            ' go back to standby
 
         ' display the received payload on the terminal
         ser.pos_xy(0, 5)
+        ser.printf1(@"Received %d bytes:\n\r", payld_len)
         ser.hexdump(@_buffer, 0, 4, payld_len, 16 <# payld_len)
 
-PUB setup{}
 
-    ser.start(SER_BAUD)
+PUB setup()
+
+    ser.start()
     time.msleep(30)
-    ser.clear{}
-    ser.strln(string("Serial terminal started"))
-    if sx1276.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN)
-        ser.str(string("SX1276 driver started"))
+    ser.clear()
+    ser.strln(@"Serial terminal started")
+
+    if ( radio.start() )
+        ser.str(@"SX1276 driver started")
     else
-        ser.strln(string("SX1276 driver failed to start - halting"))
+        ser.strln(@"SX1276 driver failed to start - halting")
         repeat
+
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
