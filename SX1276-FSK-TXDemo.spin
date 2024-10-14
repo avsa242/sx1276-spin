@@ -29,7 +29,7 @@ VAR
     byte _txbuff[radio.PAYLD_LEN_MAX]
 
 
-PUB main() | count, sz, user_str, payld_len
+PUB main() | count, sz, user_str
 
     setup()
 
@@ -69,7 +69,7 @@ PUB main() | count, sz, user_str, payld_len
         ' get the final size of the string and tell the radio about it
         sz := strsize(@_txbuff)
         radio.payld_len(sz)
-        radio.fifo_int_thresh(payld_len-1)      ' trigger int at payld len-1
+        radio.fifo_int_thresh(sz-1)             ' trigger int at payld len-1
 
         ' show what will be transmitted
         ser.pos_xy(0, 5)
@@ -77,7 +77,7 @@ PUB main() | count, sz, user_str, payld_len
         ser.hexdump(@_txbuff, 0, 4, sz, 16 <# sz)
 
         ' queue and transmit it
-        radio.tx_payld(payld_len, @_txbuff)
+        radio.tx_payld(sz, @_txbuff)
         radio.tx_mode()
 
         ' wait until the radio is done
