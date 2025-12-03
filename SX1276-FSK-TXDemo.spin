@@ -6,7 +6,7 @@
     Author:         Jesse Burt
     Started:        Aug 26, 2021
     Updated:        Oct 14, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -73,7 +73,7 @@ PUB main() | count, sz, user_str
 
         ' show what will be transmitted
         ser.pos_xy(0, 5)
-        ser.printf1(@"Transmitting %d bytes:\n\r", sz)
+        ser.printf(@"Transmitting %d bytes:\n\r", sz)
         ser.hexdump(@_txbuff, 0, 4, sz, 16 <# sz)
 
         ' queue and transmit it
@@ -104,7 +104,7 @@ PUB setup()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
