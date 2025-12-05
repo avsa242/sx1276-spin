@@ -5,7 +5,7 @@
         * Receive (FSK)
     Author:         Jesse Burt
     Started:        Aug 26, 2021
-    Updated:        Oct 14, 2024
+    Updated:        Dec 5, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -13,7 +13,7 @@
 CON
 
     _clkfreq        = 180_000_000
-    _xtlfreq        = 25_000_000
+    _xtlfreq        = 20_000_000
 
 
 OBJ
