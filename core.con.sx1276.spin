@@ -186,12 +186,13 @@ CON
 
     SYNCCFG                     = $27
     SYNCCFG_MASK                = $F7
-        AUTORSTRXMD             = 7
-        PREAM_POL               = 6
-        SYNCON                  = 5
+        AUTORSTRXMD             = 6
+        PREAM_POL               = 5
+        SYNCON                  = 4
         SYNCSZ                  = 0
+        AUTORSTRXMD_BITS        = %11
         SYNCSZ_BITS             = %111
-        AUTORSTRXMD_MASK        = (1 << AUTORSTRXMD) ^ SYNCCFG_MASK
+        AUTORSTRXMD_MASK        = (AUTORSTRXMD_BITS << AUTORSTRXMD) ^ SYNCCFG_MASK
         PREAM_POL_MASK          = (1 << PREAM_POL) ^ SYNCCFG_MASK
         SYNCON_MASK             = (1 << SYNCON) ^ SYNCCFG_MASK
         SYNCSZ_MASK             = SYNCSZ_BITS ^ SYNCCFG_MASK

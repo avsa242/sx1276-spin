@@ -4,7 +4,7 @@
     Description:    Driver for the SEMTECH SX1276 FSK/OOK transceiver
     Author:         Jesse Burt
     Started:        Oct 6, 2019
-    Updated:        Dec 5, 2025
+    Updated:        Dec 6, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -1007,7 +1007,10 @@ PUB set_syncwd(p_src)
 '   p_src:
 '       pointer to copy syncword data from
 '   NOTE: 8 bytes will be read from ptr_syncwd
-    writereg(core.SYNCVALUE1, p_src, 8)
+    ifnot ( _syncword_len )                     ' get the current syncword length setting if it
+        _syncword_len := syncwd_len()           '   isn't already known
+
+    writereg(core.SYNCVALUE1, p_src, _syncword_len)
 
 
 PUB syncwd(p_dest): p
@@ -1015,7 +1018,10 @@ PUB syncwd(p_dest): p
 '   p_dest:
 '       pointer to copy syncword data to
 '   NOTE: Variable pointed to by ptr_buff must be at least 8 bytes in length
-    readreg(core.SYNCVALUE1, 8, p_dest)
+    ifnot ( _syncword_len )
+        _syncword_len := syncwd_len()
+
+    readreg(core.SYNCVALUE1, _syncword_len, p_dest)
 
 
 PUB syncwd_ena(e=-2): c
@@ -1033,20 +1039,21 @@ PUB syncwd_ena(e=-2): c
         other:
             return (((c >> core.SYNCON) & 1) == 1)
 
-
-PUB syncwd_len(len=-2): g
+var byte _syncword_len
+PUB syncwd_len(len=-2): c
 ' Set length of sync word
 '   len: (bytes)
 '       1..8            (default: 8)
 '       other values:   returns the current setting
-    g := readreg(core.SYNCCFG)
+    c := readreg(core.SYNCCFG)
     case len
         1..8:
+            _syncword_len := len
             len := (len-1) << core.SYNCSZ
-            len := ((g & core.SYNCSZ_MASK) | len)
+            len := ((c & core.SYNCSZ_MASK) | len)
             writereg(core.SYNCCFG, len)
         other:
-            return (((g >> core.SYNCSZ) & core.SYNCSZ_BITS) + 1)
+            return (((c >> core.SYNCSZ) & core.SYNCSZ_BITS) + 1)
 
 
 PUB tx_mode()
@@ -1141,24 +1148,24 @@ PUB tx_start_cond(cnd=-2): c
 
 PRI readreg(reg_nr, len=1, p_dest=0): v | tmp
 ' Read nr_bytes from device into ptr_buff
-    if ( len =< 4 )
-        p_dest := @v
-
     outa[_CS] := 0
         spi.wr_byte(reg_nr)
-        spi.rdblock_msbf(p_dest, len)           ' read MS-byte first
+        if ( (reg_nr == core.SYNCVALUE1) or (reg_nr == core.FIFO) )
+            spi.rdblock_lsbf(p_dest, len)       ' read array types LSByte-first
+        else
+            v := 0
+            spi.rdblock_msbf(@v, len)           ' read multibyte numbers MSByte-first
     outa[_CS] := 1
 
 
 PRI writereg(reg_nr, val, len=1) | tmp, p_src
 ' Write nr_bytes from ptr_buff to device
-    if ( (len > 4) )
-        p_src := val
-    else
-        p_src := @val
     outa[_CS] := 0
         spi.wr_byte(reg_nr | core.SPI_WR)       ' must set WNR bit to write
-        spi.wrblock_msbf(p_src, len)            ' write MS-byte first
+        if ( (reg_nr == core.SYNCVALUE1) or (reg_nr == core.FIFO) )
+            spi.wrblock_lsbf(val, len)          ' write array types LSByte-first
+        else
+            spi.wrblock_msbf(@val, len)         ' write multibyte numbers MSByte first
     outa[_CS] := 1
 
 
