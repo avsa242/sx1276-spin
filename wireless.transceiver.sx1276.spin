@@ -269,7 +269,7 @@ PUB afc_rx_bw(bw=-2): c | exp_mod, exp, mant, mant_tmp, rxb_calc
         2_600..250_000:
             ' iterate through combinations of exponent and mantissa settings
             '   until a (close) match to the requested BW is found
-            repeat exp from 7 to 0
+            repeat exp from 7 to 1
                 repeat mant from 2 to 0
                     mant_tmp := lookupz(mant: 16, 20, 24)
                     rxb_calc := FXOSC / (mant_tmp * (1 << (exp + exp_mod) ) )
@@ -285,6 +285,149 @@ PUB afc_rx_bw(bw=-2): c | exp_mod, exp, mant, mant_tmp, rxb_calc
             mant := ( (c >> core.AFCBWMANT) & core.AFCBWMANT_BITS)
             mant := lookupz(mant: 16, 20, 24)
             return (FXOSC / (mant * (1 << (exp + exp_mod) ) ) )
+
+
+con
+
+    ' machine states: after idle
+    FRM_IDLE_TO_TX          = 0
+    FRM_IDLE_TO_RX          = 1
+
+PUB after_idle(md=-2): c
+' Select state to transition to after idle
+'   md:
+'       FRM_IDLE_TO_TX (0):
+'       FRM_IDLE_TO_RX (1):
+'       other values:       returns the current setting
+    c := readreg(core.SEQCFG1)
+    case md
+        FRM_IDLE_TO_TX, FRM_IDLE_TO_RX:
+            md := (c & core.FROMIDLE_MASK) | (md << core.FROMIDLE)
+            writereg(core.SEQCFG1, md)
+        other:
+            return ( (c >> core.FROMIDLE) & 1 )
+
+
+con
+
+    ' machine states: after LowPowerSelection
+    LOWPWR_SEQOFF           = 0                 ' sequencer off
+    LOWPWR_IDLE             = 1                 ' idle mode (set with idle_mode() )
+
+PUB after_lowpwr(md=-2): c
+' Select LowPower sequencer state
+'   md:
+'       LOWPWR_SEQOFF (0):  sequencer off
+'       LOWPWR_IDLE (1):    idle
+'       other values:       returns the current setting
+    c := readreg(core.SEQCFG1)
+    case md
+        LOWPWR_SEQOFF, LOWPWR_IDLE:
+            md := (c & core.LOWPWRSELECT_MASK) | (md << core.LOWPWRSELECT)
+            writereg(core.SEQCFG1, md)
+        other:
+            return ( (c >> core.LOWPWRSELECT) & 1 )
+
+
+con
+
+    ' machine states: after packet received
+    FRM_PKTRX_TO_SEQ_OFF    = %000              ' sequencer off
+    FRM_PKTRX_TO_TX         = %001              ' transmit state when fifo_empty()
+    FRM_PKTRX_TO_LOWPWR     = %010              ' low power selection
+    FRM_PKTRX_TO_FSRX       = %011              ' RX (FS first, if carrier_freq() was changed)
+    FRM_PKTRX_TO_RX         = %100              ' RX (if carrier_freq() wasn't changed)
+
+PUB after_rx(s=-2): c
+' Define the state the radio transitions to after a packet is successfully received
+'   s:
+'       FRM_PKTRX_TO_SEQ_OFF (0):
+'       FRM_PKTRX_TO_TX (1):
+'       FRM_PKTRX_TO_LOWPWR (2):
+'       FRM_PKTRX_TO_FSRX (3):
+'       FRM_PKTRX_TO_RX (4):
+    c := readreg(core.SEQCFG2)
+    case s
+        FRM_PKTRX_TO_SEQ_OFF..FRM_PKTRX_TO_RX:
+            s := (c & core.FROMPKTRECEIVED_MASK) | s
+            writereg(core.SEQCFG2, s)
+        other:
+            return (c & core.FROMPKTRECEIVED_BITS)
+
+
+con
+
+    ' machine states: after rx mode
+    FRM_RXMD_TO_PKTRECVD    = %001              ' packet received (on INT_PAYLDREADY interrupt)
+    FRM_RXMD_TO_LOWPWR      = %010              ' low power selection (on INT_PAYLDREADY interrupt)
+    FRM_RXMD_TO_PKTRECVD_CRC= %011              ' packet received (on INT_CRCOK interrupt)
+    FRM_RXMD_TO_SEQOFF_RSSI = %100              ' sequencer off (on INT_RSSITHRESH interrupt)
+    FRM_RXMD_TO_SEQOFF_SYNC = %101              ' sequencer off (on INT_SYNCWORDOK interrupt)
+    FRM_RXMD_TO_SEQOFF_PREAM= %110              ' sequencer off (on INT_PREAMBLEOK interrupt)
+
+PUB after_rxmode(md=-2): c
+' Select sequencer state after transitioning to RX mode
+'   md:
+'       FRM_RXMD_TO_PKTRECVD (1)
+'       FRM_RXMD_TO_LOWPWR (2)
+'       FRM_RXMD_TO_PKTRECVD_CRC (3)
+'       FRM_RXMD_TO_SEQOFF_RSSI (4)
+'       FRM_RXMD_TO_SEQOFF_SYNC (5)
+'       FRM_RXMD_TO_SEQOFF_PREAM (6)
+'       other values:                   returns the current setting
+    c := readreg(core.SEQCFG2)
+    case md
+        FRM_RXMD_TO_PKTRECVD..FRM_RXMD_TO_SEQOFF_PREAM:
+            md := (c & core.FROMRECEIVE_MASK) | (md << core.FROMRECEIVE)
+            writereg(core.SEQCFG2, md)
+        other:
+            return ( (c >> core.FROMRECEIVE) & core.FROMRECEIVE_BITS )
+
+
+con
+
+    ' machine states: after start
+    FRM_START_TO_LOWPWR     = %00               ' low power selection
+    FRM_START_TO_RX         = %01               ' receive mode
+    FRM_START_TO_TX         = %10               ' transmit mode
+    FRM_START_TO_TX_FIFOLVL = %11               ' transmit mode when fifo_int_thresh() is reached
+
+PUB after_start(s=-2): c
+' Select sequencer state after it's been started
+'   s:
+'       FRM_START_TO_LOWPWR (0):
+'       FRM_START_TO_RX (1):
+'       FRM_START_TO_TX (2):
+'       FRM_START_TO_TX_FIFOLVL (3):
+'       other values:                   returns the current setting
+    c := readreg(core.SEQCFG1)
+    case s
+        FRM_START_TO_LOWPWR..FRM_START_TO_TX_FIFOLVL:
+            s := (c & core.FROMSTART_MASK) | (s << core.FROMSTART)
+            writereg(core.SEQCFG1, s)
+        other:
+            return ( (c >> core.FROMSTART) & core.FROMSTART_BITS )
+
+
+con
+
+    ' machine states: after packet transmitted
+    FRM_PKTTX_TO_LOWPWR     = 0
+    FRM_PKTTX_TO_RX         = 1
+
+PUB after_tx(s=-2): c
+' Define the state the radio transitions to after a packet is successfully transmitted
+'   s:
+'       FRM_PKTTX_TO_LOWPWR (0):
+'       FRM_PKTTX_TO_RX (1):
+'       other values:               returns the current setting
+    c := readreg(core.SEQCFG1)
+    case s
+        FRM_PKTTX_TO_LOWPWR, FRM_PKTTX_TO_RX:
+            s := (c & core.FROMTRANSMIT_MASK) | (s << core.FROMTRANSMIT)
+            writereg(core.SEQCFG1, s)
+        other:
+            return ( (c >> core.FROMTRANSMIT) & 1)
 
 
 PUB agc_mode(md=-2): c
@@ -613,6 +756,26 @@ PUB gpio5(md=-2): c
 PUB idle()
 ' Change chip state to idle (standby)
     opmode(STDBY)
+
+
+con
+
+    ' idle_mode()
+    #0,IDLEMD_STANDBY, IDLEMD_SLEEP
+
+PUB idle_mode(m=-2): c
+' Select power mode when sequencer is in the 'idle' state
+'   m:
+'       IDLEMD_STANDBY (0): Standby (default)
+'       IDLEMD_SLEEP (1):   Sleep
+'       other values:       returns the current setting
+    c := readreg(core.SEQCFG1)
+    case abs(m)
+        0, 1:
+            m := (c & core.FROMSTART_MASK) | ( (m & 1) << core.FROMSTART)
+            writereg(core.SEQCFG1, m)
+        other:
+            return ( (c >> core.FROMSTART) & 1)
 
 
 PUB int_clear(m)
@@ -1044,6 +1207,20 @@ PUB rx_payld(len, p_dest)
 PUB sleep()
 ' Power down chip
     opmode(SLEEPMODE)
+
+
+PUB sequencer_start() | tmp
+' Start the state machine sequencer
+    opmode(STDBY)                               ' must be in standby or sleep mode to start the
+                                                '   sequencer
+    tmp := readreg(core.SEQCFG1)
+    writereg(core.SEQCFG1, tmp | core.SEQUENCER_START)
+
+
+PUB sequencer_stop() | tmp
+' Stop the state machine sequencer
+    tmp := readreg(core.SEQCFG1)
+    writereg(core.SEQCFG1, tmp | core.SEQUENCER_STOP)
 
 
 PUB set_syncwd(p_src)

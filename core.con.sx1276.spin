@@ -272,7 +272,35 @@ CON
         FIFOTHR_MASK            = FIFOTHR_BITS ^ FIFOTHRESH_MASK
 
     SEQCFG1                     = $36
+    SEQCFG1_REGMASK             = $ff
+        SEQ_START               = 7
+        SEQ_STOP                = 6
+        IDLEMODE                = 5
+        FROMSTART               = 3
+        LOWPWRSELECT            = 2
+        FROMIDLE                = 1
+        FROMTRANSMIT            = 0
+        IDLEMODE_MASK           = (1 << IDLEMODE) ^ SEQCFG1_REGMASK
+        FROMSTART_BITS          = %11
+        FROMSTART_MASK          = (FROMSTART_BITS << FROMSTART) ^ SEQCFG1_REGMASK
+        LOWPWRSELECT_MASK       = (1 << LOWPWRSELECT) ^ SEQCFG1_REGMASK
+        FROMIDLE_MASK           = (1 << FROMIDLE) ^ SEQCFG1_REGMASK
+        FROMTRANSMIT_MASK       = (1 << FROMTRANSMIT) ^ SEQCFG1_REGMASK
+        SEQUENCER_START         = (1 << SEQ_START)
+        SEQUENCER_STOP          = (1 << SEQ_STOP)
+
     SEQCFG2                     = $37
+    SEQCFG2_REGMASK             = $ff
+        FROMRECEIVE             = 5
+        FROMRXTIMEOUT           = 3
+        FROMPKTRECEIVED         = 0
+        FROMRECEIVE_BITS        = %111
+        FROMRECEIVE_MASK        = (FROMRECEIVE_BITS << FROMRECEIVE) ^ SEQCFG2_REGMASK
+        FROMRXTIMEOUT_BITS      = %11
+        FROMRXTIMEOUT_MASK      = (FROMRXTIMEOUT_BITS << FROMRXTIMEOUT) ^ SEQCFG2_REGMASK
+        FROMPKTRECEIVED_BITS    = %111
+        FROMPKTRECEIVED_MASK    = (FROMPKTRECEIVED_BITS << FROMPKTRECEIVED) ^ SEQCFG2_REGMASK
+
     TIMERRESOL                  = $38
     TIMER1COEF                  = $39
     TIMER2COEF                  = $3A
