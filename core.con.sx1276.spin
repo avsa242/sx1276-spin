@@ -4,8 +4,8 @@
     Description:    SX1276-specific constants
     Author:         Jesse Burt
     Started:        Oct 6, 2019
-    Updated:        Oct 14, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Dec 6, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -158,11 +158,30 @@ CON
         RX_BW_MASK              = RX_BW_BITS ^ RXBW_MASK
 
     AFCBW                       = $13
+    AFCBW_REGMASK               = RXBW_MASK
+        AFCBWMANT               = RXBWMANT
+        AFCBWEXP                = RXBWEXP
+        AFC_BW                  = RX_BW
+        AFCBWMANT_BITS          = RXBWMANT_BITS
+        AFCBWEXP_BITS           = RXBWEXP_BITS
+        AFC_BW_BITS             = RX_BW_BITS
+        AFCBWMANT_MASK          = RXBWMANT_MASK
+        AFCBWEXP_MASK           = RXBWEXP_MASK
+        AFC_BW_MASK             = RX_BW_MASK
+
     OOKPEAK                     = $14
     OOKFIX                      = $15
     OOKAVG                      = $16
 ' $17..$19 - RESERVED
     AFCFEI                      = $1A
+    AFCFEI_REGMASK              = $13
+        AGCSTART                = 4
+        AFCCLEAR                = 1
+        AFCAUTOCLEARON          = 0
+        AGCSTART_MASK           = (1 << AGCSTART) ^ AFCFEI_REGMASK
+        AFCCLEAR_MASK           = (1 << AFCCLEAR) ^ AFCFEI_REGMASK
+        AFCAUTOCLEARON_MASK     = 1 ^ AFCFEI_REGMASK
+
     AFCMSB                      = $1B
     AFCLSB                      = $1C
     FEIMSB                      = $1D
@@ -283,7 +302,7 @@ PUB null()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
