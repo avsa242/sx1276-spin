@@ -5,15 +5,15 @@
         * Receive (FSK)
     Author:         Jesse Burt
     Started:        Aug 26, 2021
-    Updated:        Dec 5, 2025
+    Updated:        Dec 12, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkfreq        = 180_000_000
-    _xtlfreq        = 20_000_000
+    _clkfreq    = 180_000_000
+    _xtlfreq    = 20_000_000
 
 
 OBJ
@@ -27,51 +27,55 @@ VAR
     byte _buffer[radio.PAYLD_LEN_MAX]
 
 
-PUB main() | sw[2], payld_len
+DAT
+
+    ' define up to an 8 byte syncword (no zeroes allowed; a zero will be interpreted as the end)
+    ' this MUST match the transmitter
+    syncword    byte $2d, $d4, $e7, $c6, 0
+
+
+PUB main() | payld_len, rssi, sl, w, int
 
     setup()
 
     ser.pos_xy(0, 3)
     ser.strln(@"Receive mode")
+    radio.preset_fsk_rx_4k8_fixedlen()          ' preset: FSK, 4800bps, fixed-length payloads
 
-' -- TX/RX settings
-    ' NOTE: These settings _must_ match the transmitting node
-    radio.preset_fsk_rx_4k8()                   ' preset settings: FSK, 4800bps
-    radio.carrier_freq(902_300_000)             ' US 902.3MHz
-    radio.payld_len(8)                          ' set to length of test pkts
-    radio.payld_len_cfg(radio.PKTLEN_FIXED)     ' fixed-length payload
-    payld_len := radio.payld_len()              ' read back from radio
-    radio.fifo_int_thresh(payld_len-1)          ' trigger int at payld len-1
-    radio.syncwd_len(8)                         ' syncword length 1..8
-    radio.set_syncwd( string($E7, $E7, $E7, $E7, $E7, $E7, $E7, $E7) )
+
+' -- Try changing these settings if having difficulty receiving data
+    radio.carrier_freq(902_300_000)             ' receive frequency (MUST match transmitter)
+'    radio.lna_gain(0)                           ' -6, -12, -24, -26, -48 dB
+                                                ' or LNA_AGC (0), LNA_HIGH (1)
+'    radio.afc_auto_ena(true)                    ' enable automatic frequency correction
 ' --
 
-' -- RX-specific settings
+    radio.syncwd_len(strsize(@syncword) )       ' get the length of the syncword
+    radio.set_syncwd(@syncword)                 '   and set it
+
+    ser.printf(@"Carrier freq: %dHz  syncword: ", radio.carrier_freq() )
+    sl := radio.syncwd_len()
+    repeat w from 0 to sl-1
+        ser.printf(@"%02.2x ", syncword[w])
+    ser.newline()
+
+    payld_len := 8                              ' set length of payload (MUST match transmitter)
+    radio.payld_len(payld_len)
+    radio.fifo_int_thresh(payld_len)            ' trigger int at payld len
     radio.rx_mode()
 
-    ' change these if having difficulty with reception
-    radio.lna_gain(0)                           ' -6, -12, -24, -26, -48 dB
-                                                ' or LNA_AGC (0), LNA_HIGH (1)
-    radio.rssi_int_thresh(-80)                  ' set rcvd signal level thresh
-                                                '   considered a valid signal
-                                                ' -127..0 (dBm)
-' --
-
     repeat
-        ' clear the temporary receive buffer and set up the radio for reception
-        bytefill(@_buffer, 0, radio.PAYLD_LEN_MAX)
-        radio.rx_mode()
-
-        ' wait for the radio to finish receiving
         repeat
-        until radio.payld_rdy()
-        radio.rx_payld(payld_len, @_buffer)     ' get the data from the radio
-        radio.idle()                            ' go back to standby
+            rssi := radio.rssi()
+            int := radio.interrupt()
+        until ( int & radio.INT_PAYLDREADY )    ' wait for payload to be ready (RX and good CRC)
 
-        ' display the received payload on the terminal
-        ser.pos_xy(0, 5)
-        ser.printf(@"Received %d bytes:\n\r", payld_len)
-        ser.hexdump(@_buffer, 0, 4, payld_len, 16 <# payld_len)
+        ser.printf(@"rssi: %4.4d  len: %d  ", rssi, payld_len)
+
+        ' read the payload and display it on the terminal
+        bytefill(@_buffer, 0, radio.PAYLD_LEN_MAX)
+        radio.rx_payld(payld_len, @_buffer)     ' get the data from the radio
+        ser.hexdump(@_buffer, 0, 2, payld_len, 16 <# payld_len)
 
 
 PUB setup()

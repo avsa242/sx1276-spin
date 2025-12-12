@@ -5,7 +5,7 @@
         * Transmit (FSK)
     Author:         Jesse Burt
     Started:        Aug 26, 2021
-    Updated:        Oct 14, 2024
+    Updated:        Dec 12, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -29,61 +29,59 @@ VAR
     byte _txbuff[radio.PAYLD_LEN_MAX]
 
 
-PUB main() | count, sz, user_str
+DAT
+
+    ' define up to an 8 byte syncword (no zeroes allowed; a zero will be interpreted as the end)
+    ' this MUST match the receiver
+    syncword    byte $2d, $d4, $e7, $c6, 0
+
+
+PUB main() | count, sz, user_str, sl, w, payld_len
 
     setup()
 
-    ser.pos_xy(0, 3)
-    ser.strln(@"Transmit mode")
 
-    ' user-modifiable string to send over the air
-    ' NOTE: the format should match the parameters in the sprintf() call below
-    user_str := @"This is message # $%04.4x"
+    radio.preset_fsk_tx_4k8_fixedlen()          ' preset: FSK, 4800bps, fixed-length payloads
 
+' -- User-modifiable settings
+    user_str := @"TEST%04.4x"                   ' data to send (make sure sprintf() in the transmit
+                                                '   loop matches the layout of this data)
+    payld_len := 8                              ' set length of payload (MUST match receiver)
 
-' -- TX/RX settings
-    ' NOTE: These settings _must_ match the receiving node
-    radio.preset_fsk_tx_4k8()                  ' FSK, 4800bps
-    radio.carrier_freq(902_300_000)
-    radio.syncwd_len(8)                        ' syncword length 1..8
-    radio.set_syncwd( string($E7, $E7, $E7, $E7, $E7, $E7, $E7, $E7) )
-    radio.payld_len_cfg(radio.PKTLEN_FIXED)   ' fixed-length payload
+    radio.carrier_freq(902_300_000)             ' transmit frequency (MUST match receiver)
+    radio.tx_sig_routing(radio.PABOOST)         ' RFO, PABOOST (board-dependent)
+    radio.tx_pwr(5)                             ' -1..14 (RFO) 5..23 (PABOOST)
+    radio.payld_len(payld_len)                  ' payload length (MUST match receiver)
 ' --
 
-' -- TX-specific settings
-    { transmit power }
-    radio.tx_sig_routing(radio.PABOOST)       ' RFO, PABOOST (board-dependent)
-    radio.tx_pwr(5)                            ' -1..14 (RFO) 5..23 (PABOOST)
+    radio.syncwd_len(strsize(@syncword) )       ' get the length of the syncword
+    radio.set_syncwd(@syncword)                 '   and set it
 
-    { tell the radio to wait until the FIFO reaches the level set by }
-    {   fifo_int_thresh() to actually transmit }
-    radio.tx_start_cond(radio.TXSTART_FIFOLVL)
-' --
+    ser.printf(@"Carrier freq: %dHz  syncword: ", radio.carrier_freq() )
+    sl := radio.syncwd_len()
+    repeat w from 0 to sl-1
+        ser.printf(@"%02.2x ", syncword[w])
+    ser.newline()
 
+    radio.fifo_int_thresh(payld_len)            ' trigger interrupt at payld len
+    radio.tx_start_cond(radio.TXSTART_FIFOLVL)  ' start transmitting when the FIFO reaches thresh
     count := 0
+
     repeat
-        ' clear the temporary string buffer and copy the user string with a counter to it
         bytefill(@_txbuff, 0, radio.PAYLD_LEN_MAX)
         str.sprintf1(@_txbuff, user_str, count++)
-
-        ' get the final size of the string and tell the radio about it
         sz := strsize(@_txbuff)
-        radio.payld_len(sz)
-        radio.fifo_int_thresh(sz-1)             ' trigger int at payld len-1
 
-        ' show what will be transmitted
         ser.pos_xy(0, 5)
         ser.printf(@"Transmitting %d bytes:\n\r", sz)
         ser.hexdump(@_txbuff, 0, 4, sz, 16 <# sz)
 
-        ' queue and transmit it
         radio.tx_payld(sz, @_txbuff)
-        radio.tx_mode()
+        radio.tx_mode()                         ' transmit
 
-        ' wait until the radio is done
-        repeat
+        repeat                                  ' wait until the transmission is complete
         until radio.payld_sent()
-        radio.idle()
+        radio.idle()                            ' idle/turn off carrier (important)
 
         time.msleep(1000)                       ' wait in between packets
                                                 ' (don't abuse the airwaves)
@@ -101,6 +99,7 @@ PUB setup()
     else
         ser.strln(@"SX1276 driver failed to start - halting")
         repeat
+
 
 DAT
 {

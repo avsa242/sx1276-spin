@@ -189,15 +189,29 @@ PUB defaults()
 
 
 PUB preset_fsk_tx_4k8()
-' TX FSK, 4.8kbps
+' TX FSK, 4.8kbps, dynamic-length payloads
     reset()
     modulation(FSK)
 
 
 PUB preset_fsk_rx_4k8()
-' RX FSK, 4.8kbps
+' RX FSK, 4.8kbps, dynamic-length payloads
     reset()
     modulation(FSK)
+
+
+PUB preset_fsk_tx_4k8_fixedlen()
+' TX FSK, 4.8kbps, fixed-length payloads
+    reset()
+    modulation(FSK)
+    payld_len_cfg(PKTLEN_FIXED)
+
+
+PUB preset_fsk_rx_4k8_fixedlen()
+' RX FSK, 4.8kbps, fixed-length payloads
+    reset()
+    modulation(FSK)
+    payld_len_cfg(PKTLEN_FIXED)
 
 
 PUB addr_check(md=-2): c
