@@ -797,23 +797,23 @@ PUB int_clear(m)
 PUB interrupt(): i
 ' Read interrupt flags
 '   Returns: Interrupt flags bits
-'   Bits 15..0
-'       15: OpMode ready (clears when changing opmode())
-'       14: Receive ready (clears when leaving RX mode)
-'       13: Transmit ready (clears when leaving TX mode)
-'       12: PLL locked (TX or RX)
-'       11: RSSI exceeds rssi_int_thresh()
-'       10: Timeout (clears when leaving RX mode or FIFO emptied)
-'       9:  Valid preamble detected
-'       8:  Matching syncword (and address, if enabled) detected
-'       7:  FIFO is full (66 bytes)
-'       6:  FIFO is empty
-'       5:  FIFO level exceeds threshold
-'       4:  FIFO has overrun
-'       3:  Packet sent (clears when leaving TX opmode)
-'       2:  Payload ready (and CRC is OK, if enabled)
-'       1:  CRC OK (cleared when FIFO empty)
-'       0:  Battery voltage < low batt threshold
+'       Bit Description:                    To clear the flag:
+'       15: OpMode ready                    change opmode()
+'       14: Receive ready                   leave RX mode
+'       13: Transmit ready                  leave TX mode
+'       12: PLL locked (TX or RX)           cleared automatically when PLL is NOT locked
+'       11: RSSI exceeds rssi_int_thresh()  int_clear(INT_RSSITHRESH)
+'       10: Timeout                         leave RX mode or empty FIFO with rx_payld()
+'       9:  Valid preamble detected         int_clear(INT_PREAMBLEOK)
+'       8:  Matching syncword and address   int_clear(INT_SYNCWORDOK)
+'       7:  FIFO is full (66 bytes)         empty FIFO with rx_payld()
+'       6:  FIFO is empty                   cleared automatically if FIFO contains at least one byte
+'       5:  FIFO level exceeds threshold    empty FIFO with rx_payld()
+'       4:  FIFO has overrun                empty FIFO with rx_payld() or int_clear (INT_FIFOOVERRN)
+'       3:  Packet sent                     leave TX mode
+'       2:  Payload ready                   read payload with rx_payld()
+'       1:  CRC OK                          empty FIFO with rx_payld()
+'       0:  Battery V < low_batt_lvl()      int_clear(INT_BATTVOLTLO)
     return readreg(core.IRQFLAGS1, 2)
 
 
