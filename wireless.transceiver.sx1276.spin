@@ -4,7 +4,7 @@
     Description:    Driver for the SEMTECH SX1276 FSK/OOK transceiver
     Author:         Jesse Burt
     Started:        Oct 6, 2019
-    Updated:        Dec 6, 2025
+    Updated:        Dec 12, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -1291,7 +1291,7 @@ PUB tx_payld(len, p_src)
 '       pointer to buffer of data to be transmitted
     case len
         1..64:
-            writereg(core.FIFO, len, p_src)
+            writereg(core.FIFO, p_src, len)
         other:
             return
 
