@@ -497,6 +497,21 @@ PUB clk_out(d=-2): c
             return lookupz(c: 1, 2, 4, 8, 16, 32, CLKOUT_RC, CLKOUT_OFF)
 
 
+PUB crc_auto_flush_ena(e=-2): c
+' Enable automatic flushing of received packets that fail CRC
+'   e:
+'       TRUE (-1 or 1): enable (default)
+'       FALSE (0):      disable
+'       other values:   returns the current setting
+    c := readreg(core.PKTCFG1)
+    case abs(e)
+        0, 1:
+            e := (c & core.CRCAUTOCLROFF_MASK) | ( ( (e & 1)^1) << core.CRCAUTOCLROFF)
+            writereg(core.PKTCFG1, e)
+        other:
+            return ( ( (c >> core.CRCAUTOCLROFF) & 1) ^ 1)
+
+
 PUB crc_check_ena(e=-2): c
 ' Enable CRC calculation (in TX mode) and checking (in RX mode)
 '   e:
